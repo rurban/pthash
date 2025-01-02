@@ -277,10 +277,18 @@ struct compact_vector {
 
     template <typename Visitor>
     void visit(Visitor& visitor) {
-        visitor.visit(m_size);
-        visitor.visit(m_width);
-        visitor.visit(m_mask);
-        visitor.visit(m_bits);
+        visitor.visit("size", m_size);
+        visitor.visit("width", m_width);
+        visitor.visit("mask", m_mask);
+        visitor.visit("bits", m_bits);
+    }
+    template <typename Visitor>
+    void visit(const std::string name, Visitor& visitor) {
+        visitor.visit(name, name);
+        visitor.visit("size", m_size);
+        visitor.visit("width", m_width);
+        visitor.visit("mask", m_mask);
+        visitor.visit("bits", m_bits);
     }
 
 private:

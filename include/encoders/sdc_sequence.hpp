@@ -53,9 +53,16 @@ struct sdc_sequence {
 
     template <typename Visitor>
     void visit(Visitor& visitor) {
-        visitor.visit(m_size);
-        visitor.visit(m_codewords);
-        visitor.visit(m_index);
+        visitor.visit("size", m_size);
+        visitor.visit("codewords", m_codewords);
+        visitor.visit("index", m_index);
+    }
+    template <typename Visitor>
+    void visit(const std::string _name, Visitor& visitor) {
+        visitor.visit(_name, _name);
+        visitor.visit("size", m_size);
+        visitor.visit("codewords", m_codewords);
+        visitor.visit("index", m_index);
     }
 
 private:

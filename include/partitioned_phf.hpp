@@ -16,8 +16,8 @@ private:
     struct partition {
         template <typename Visitor>
         void visit(Visitor& visitor) {
-            visitor.visit(offset);
-            visitor.visit(f);
+            visitor.visit("offset", offset);
+            visitor.visit("f", f);
         }
 
         uint64_t offset;
@@ -119,11 +119,11 @@ public:
 
     template <typename Visitor>
     void visit(Visitor& visitor) {
-        visitor.visit(m_seed);
-        visitor.visit(m_num_keys);
-        visitor.visit(m_table_size);
-        visitor.visit(m_partitioner);
-        visitor.visit(m_partitions);
+        visitor.visit("seed", m_seed);
+        visitor.visit("num_keys", m_num_keys);
+        visitor.visit("table_size", m_table_size);
+        visitor.visit("partitioner", m_partitioner);
+        visitor.visit("partitions", m_partitions);
     }
 
 private:

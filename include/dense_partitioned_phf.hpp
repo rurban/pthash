@@ -115,14 +115,14 @@ struct dense_partitioned_phf {
 
     template <typename Visitor>
     void visit(Visitor& visitor) {
-        visitor.visit(m_seed);
-        visitor.visit(m_num_keys);
-        visitor.visit(m_table_size);
-        visitor.visit(m_partitioner);
-        visitor.visit(m_bucketer);
-        visitor.visit(m_pilots);
-        visitor.visit(m_offsets);
-        if (needsFreeArray) visitor.visit(m_free_slots);
+        visitor.visit("seed", m_seed);
+        visitor.visit("num_keys", m_num_keys);
+        visitor.visit("table_size", m_table_size);
+        visitor.visit("partitioner", m_partitioner);
+        visitor.visit("bucketer", m_bucketer);
+        visitor.visit("pilots", m_pilots);
+        visitor.visit("offsets", m_offsets);
+        if (needsFreeArray) visitor.visit("free_slots", m_free_slots);
     }
 
 private:

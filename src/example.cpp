@@ -74,8 +74,8 @@ int main() {
     }
 
     /* Serialize the data structure to a file. */
-    std::cout << "serializing the function to disk..." << std::endl;
     std::string output_filename("pthash.bin");
+    std::cout << "serializing the function to " << output_filename << "..." << std::endl;
     essentials::save(f, output_filename.c_str());
 
     {
@@ -88,6 +88,6 @@ int main() {
         }
     }
 
-    std::remove(output_filename.c_str());
+    //std::remove(output_filename.c_str());
     return 0;
 }

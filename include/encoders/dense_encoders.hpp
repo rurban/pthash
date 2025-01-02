@@ -40,8 +40,14 @@ struct diff {
 
     template <typename Visitor>
     void visit(Visitor& visitor) {
-        visitor.visit(m_increment);
-        visitor.visit(m_encoder);
+        visitor.visit("increment", m_increment);
+        visitor.visit("encoder", m_encoder);
+    }
+    template <typename Visitor>
+    void visit(const std::string _name, Visitor& visitor) {
+        visitor.visit(_name, _name);
+        visitor.visit("increment", m_increment);
+        visitor.visit("encoder", m_encoder);
     }
 
 private:
@@ -82,8 +88,14 @@ struct dense_mono : dense_encoder {
 
     template <typename Visitor>
     void visit(Visitor& visitor) {
-        visitor.visit(m_num_partitions);
-        visitor.visit(m_encoder);
+        visitor.visit("num_partitions", m_num_partitions);
+        visitor.visit("encoder", m_encoder);
+    }
+    template <typename Visitor>
+    void visit(const std::string _name, Visitor& visitor) {
+        visitor.visit(_name, _name);
+        visitor.visit("num_partitions", m_num_partitions);
+        visitor.visit("encoder", m_encoder);
     }
 
 private:
@@ -146,7 +158,12 @@ struct dense_interleaved : dense_encoder {
 
     template <typename Visitor>
     void visit(Visitor& visitor) {
-        visitor.visit(m_encoders);
+        visitor.visit("encoders", m_encoders);
+    }
+    template <typename Visitor>
+    void visit(const std::string _name, Visitor& visitor) {
+        visitor.visit(_name, _name);
+        visitor.visit("encoders", m_encoders);
     }
 
 private:
@@ -199,9 +216,16 @@ struct dense_dual : dense_encoder {
 
     template <typename Visitor>
     void visit(Visitor& visitor) {
-        visitor.visit(m_front_size);
-        visitor.visit(m_front);
-        visitor.visit(m_back);
+        visitor.visit("front_size", m_front_size);
+        visitor.visit("front", m_front);
+        visitor.visit("back", m_back);
+    }
+    template <typename Visitor>
+    void visit(const std::string _name, Visitor& visitor) {
+        visitor.visit(_name, _name);
+        visitor.visit("front_size", m_front_size);
+        visitor.visit("front", m_front);
+        visitor.visit("back", m_back);
     }
 
 private:

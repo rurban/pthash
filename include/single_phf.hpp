@@ -95,14 +95,26 @@ struct single_phf {
 
     template <typename Visitor>
     void visit(Visitor& visitor) {
-        visitor.visit(m_seed);
-        visitor.visit(m_num_keys);
-        visitor.visit(m_table_size);
-        visitor.visit(m_M_128);
-        visitor.visit(m_M_64);
-        visitor.visit(m_bucketer);
-        visitor.visit(m_pilots);
-        visitor.visit(m_free_slots);
+        visitor.visit("seed", m_seed);
+        visitor.visit("num_keys", m_num_keys);
+        visitor.visit("table_size", m_table_size);
+        visitor.visit("M_128", m_M_128);
+        visitor.visit("M_64", m_M_64);
+        visitor.visit("bucketer", m_bucketer);
+        visitor.visit("pilots", m_pilots);
+        visitor.visit("free_slots", m_free_slots);
+    }
+    template <typename Visitor>
+    void visit(const std::string name, Visitor& visitor) {
+        visitor.visit(name, name);
+        visitor.visit("seed", m_seed);
+        visitor.visit("num_keys", m_num_keys);
+        visitor.visit("table_size", m_table_size);
+        visitor.visit("M_128", m_M_128);
+        visitor.visit("M_64", m_M_64);
+        visitor.visit("bucketer", m_bucketer);
+        visitor.visit("pilots", m_pilots);
+        visitor.visit("free_slots", m_free_slots);
     }
 
 private:

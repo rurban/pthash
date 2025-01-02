@@ -51,9 +51,16 @@ struct rice_sequence {
 
     template <typename Visitor>
     void visit(Visitor& visitor) {
-        visitor.visit(m_high_bits);
-        visitor.visit(m_high_bits_d1);
-        visitor.visit(m_low_bits);
+        visitor.visit("high_bits", m_high_bits);
+        visitor.visit("high_bits_d1", m_high_bits_d1);
+        visitor.visit("low_bits", m_low_bits);
+    }
+    template <typename Visitor>
+    void visit(const std::string _name, Visitor& visitor) {
+        visitor.visit(_name, _name);
+        visitor.visit("high_bits", m_high_bits);
+        visitor.visit("high_bits_d1", m_high_bits_d1);
+        visitor.visit("low_bits", m_low_bits);
     }
 
 private:

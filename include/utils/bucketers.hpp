@@ -43,8 +43,14 @@ struct table_bucketer {
 
     template <typename Visitor>
     void visit(Visitor& visitor) {
-        visitor.visit(fulcrums);
-        visitor.visit(base);
+        visitor.visit("fulcrums", fulcrums);
+        visitor.visit("base", base);
+    }
+    template <typename Visitor>
+    void visit(const std::string name, Visitor& visitor) {
+        visitor.visit(name, name);
+        visitor.visit("fulcrums", fulcrums);
+        visitor.visit("base", base);
     }
 
 private:
@@ -96,10 +102,18 @@ struct opt_bucketer {
 
     template <typename Visitor>
     void visit(Visitor& visitor) {
-        visitor.visit(m_num_buckets);
-        visitor.visit(c);
-        visitor.visit(m_alpha);
-        visitor.visit(m_alpha_factor);
+        visitor.visit("num_buckets", m_num_buckets);
+        visitor.visit("c", c);
+        visitor.visit("alpha", m_alpha);
+        visitor.visit("alpha_factor", m_alpha_factor);
+    }
+    template <typename Visitor>
+    void visit(const std::string _name, Visitor& visitor) {
+        visitor.visit(_name, _name);
+        visitor.visit("num_buckets", m_num_buckets);
+        visitor.visit("c", c);
+        visitor.visit("alpha", m_alpha);
+        visitor.visit("alpha_factor", m_alpha_factor);
     }
 
 private:
@@ -148,10 +162,18 @@ struct skew_bucketer {
 
     template <typename Visitor>
     void visit(Visitor& visitor) {
-        visitor.visit(m_num_dense_buckets);
-        visitor.visit(m_num_sparse_buckets);
-        visitor.visit(m_M_num_dense_buckets);
-        visitor.visit(m_M_num_sparse_buckets);
+        visitor.visit("num_dense_buckets", m_num_dense_buckets);
+        visitor.visit("num_sparse_buckets", m_num_sparse_buckets);
+        visitor.visit("M_num_dense_buckets", m_M_num_dense_buckets);
+        visitor.visit("M_num_sparse_buckets", m_M_num_sparse_buckets);
+    }
+    template <typename Visitor>
+    void visit(const std::string _name, Visitor& visitor) {
+        visitor.visit(_name, _name);
+        visitor.visit("num_dense_buckets", m_num_dense_buckets);
+        visitor.visit("num_sparse_buckets", m_num_sparse_buckets);
+        visitor.visit("M_num_dense_buckets", m_M_num_dense_buckets);
+        visitor.visit("M_num_sparse_buckets", m_M_num_sparse_buckets);
     }
 
 private:
@@ -180,8 +202,14 @@ struct range_bucketer {
 
     template <typename Visitor>
     void visit(Visitor& visitor) {
-        visitor.visit(m_num_buckets);
-        visitor.visit(m_M_num_buckets);
+        visitor.visit("num_buckets", m_num_buckets);
+        visitor.visit("M_num_buckets", m_M_num_buckets);
+    }
+    template <typename Visitor>
+    void visit(const std::string _name, Visitor& visitor) {
+        visitor.visit(_name, _name);
+        visitor.visit("num_buckets", m_num_buckets);
+        visitor.visit("M_num_buckets", m_M_num_buckets);
     }
 
 private:
@@ -212,8 +240,14 @@ struct uniform_bucketer {
 
     template <typename Visitor>
     void visit(Visitor& visitor) {
-        visitor.visit(m_num_buckets);
-        visitor.visit(m_M_num_buckets);
+        visitor.visit("num_buckets", m_num_buckets);
+        visitor.visit("M_num_buckets", m_M_num_buckets);
+    }
+    template <typename Visitor>
+    void visit(const std::string _name, Visitor& visitor) {
+        visitor.visit(_name, _name);
+        visitor.visit("num_buckets", m_num_buckets);
+        visitor.visit("M_num_buckets", m_M_num_buckets);
     }
 
 private:
