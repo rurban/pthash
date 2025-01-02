@@ -327,6 +327,13 @@ struct bit_vector {
         visitor.visit(m_size);
         visitor.visit(m_bits);
     }
+    template <typename Visitor>
+    void visit(const std::string name, Visitor& visitor) {
+        //struct bit_vector name(m_size(), m_bits());
+        visitor.visit(name, name);
+        visitor.visit("m_size", m_size);
+        visitor.visit("m_bits", m_bits);
+    }
 
 protected:
     size_t m_size;

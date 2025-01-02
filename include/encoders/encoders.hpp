@@ -38,6 +38,11 @@ struct compact {
     void visit(Visitor& visitor) {
         visitor.visit(m_values);
     }
+    template <typename Visitor>
+    void visit(const std::string _name, Visitor& visitor) {
+        visitor.visit(_name, _name);
+        visitor.visit("m_values", m_values);
+    }
 
 private:
     compact_vector m_values;
@@ -104,6 +109,13 @@ struct partitioned_compact {
         visitor.visit(m_size);
         visitor.visit(m_bits_per_value);
         visitor.visit(m_values);
+    }
+    template <typename Visitor>
+    void visit(const std::string _name, Visitor& visitor) {
+        visitor.visit(_name, _name);
+        visitor.visit("m_size", m_size);
+        visitor.visit("m_bits_per_value", m_bits_per_value);
+        visitor.visit("m_values", m_values);
     }
 
 private:
@@ -177,6 +189,12 @@ struct dictionary {
         visitor.visit(m_ranks);
         visitor.visit(m_dict);
     }
+    template <typename Visitor>
+    void visit(const std::string _name, Visitor& visitor) {
+        visitor.visit(_name, _name);
+        visitor.visit("m_ranks", m_ranks);
+        visitor.visit("m_dict", m_dict);
+    }
 
 private:
     compact_vector m_ranks;
@@ -209,6 +227,11 @@ struct elias_fano {
     template <typename Visitor>
     void visit(Visitor& visitor) {
         visitor.visit(m_values);
+    }
+    template <typename Visitor>
+    void visit(const std::string _name, Visitor& visitor) {
+        visitor.visit(_name, _name);
+        visitor.visit("m_values", m_values);
     }
 
 private:
@@ -245,6 +268,12 @@ struct sdc {
         visitor.visit(m_ranks);
         visitor.visit(m_dict);
     }
+    template <typename Visitor>
+    void visit(const std::string _name, Visitor& visitor) {
+        visitor.visit(_name, _name);
+        visitor.visit("m_ranks", m_ranks);
+        visitor.visit("m_dict", m_dict);
+    }
 
 private:
     sdc_sequence m_ranks;
@@ -277,6 +306,11 @@ struct rice {
     void visit(Visitor& visitor) {
         visitor.visit(m_values);
     }
+    template <typename Visitor>
+    void visit(const std::string _name, Visitor& visitor) {
+        visitor.visit(_name, _name);
+        visitor.visit("m_values", m_values);
+    }
 
 private:
     rice_sequence m_values;
@@ -308,6 +342,12 @@ struct dual {
     void visit(Visitor& visitor) {
         visitor.visit(m_front);
         visitor.visit(m_back);
+    }
+    template <typename Visitor>
+    void visit(const std::string _name, Visitor& visitor) {
+        visitor.visit(_name, _name);
+        visitor.visit("m_front", m_front);
+        visitor.visit("m_back", m_back);
     }
 
 private:

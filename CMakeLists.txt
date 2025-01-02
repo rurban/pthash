@@ -31,11 +31,20 @@ if(NOT TARGET PTHASH)
   endif()
 
   if (UNIX)
-    MESSAGE(STATUS "Compiling with flags: -std=c++17 -ggdb -pthread -Wall -Wextra -Wno-missing-braces -Wno-unknown-attributes -Wno-unused-function")
-
     target_compile_options(PTHASH INTERFACE -pthread)
     target_compile_options(PTHASH INTERFACE -ggdb)
-    target_compile_options(PTHASH INTERFACE -Wall -Wextra -Wno-missing-braces -Wno-unknown-attributes -Wno-unused-function)
+    if (${CMAKE_VERSION} VERSION_GREATER "3.18.0")
+      include(CheckCompilerFlag)
+      check_compiler_flag(CXX -Wno-unknown-attributes HAVE_C_WUNKNOWN_ATTRIBUTES)
+    endif()
+
+    if (HAVE_C_WUNKNOWN_ATTRIBUTES)
+      MESSAGE(STATUS "Compiling with flags: -std=c++17 -ggdb -pthread -Wall -Wextra -Wno-missing-braces -Wno-unknown-attributes -Wno-unused-function")
+      target_compile_options(PTHASH INTERFACE -Wall -Wextra -Wno-missing-braces -Wno-unknown-attributes -Wno-unused-function)
+    else()
+      MESSAGE(STATUS "Compiling with flags: -std=c++17 -ggdb -pthread -Wall -Wextra -Wno-missing-braces -Wno-unused-function")
+      target_compile_options(PTHASH INTERFACE -Wall -Wextra -Wno-missing-braces -Wno-unused-function)
+    endif()
 
     if (PTHASH_USE_SANITIZERS)
       MESSAGE(STATUS "Using sanitizers. Compiling with flags: -fsanitize=address -fno-omit-frame-pointer")
@@ -56,6 +65,14 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   target_link_libraries(build PRIVATE PTHASH)
   add_executable(example src/example.cpp)
   target_link_libraries(example PRIVATE PTHASH)
+  add_executable(example-c src/example-c.cpp)
+  target_link_libraries(example-c PRIVATE PTHASH)
+
+  #add_custom_target(pthash-example.hpp
+  #  DEPENDS example-c
+  #  COMMAND src/example-c)
+  add_executable(example-inc src/example-inc.cpp pthash-example.hpp)
+  target_link_libraries(example-inc PRIVATE PTHASH)
 
   file(GLOB TEST_SOURCES test/test_*.cpp)
   foreach(TEST_SRC ${TEST_SOURCES})

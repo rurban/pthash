@@ -43,6 +43,12 @@ struct diff {
         visitor.visit(m_increment);
         visitor.visit(m_encoder);
     }
+    template <typename Visitor>
+    void visit(const std::string _name, Visitor& visitor) {
+        visitor.visit(_name, _name);
+        visitor.visit("m_increment", m_increment);
+        visitor.visit("m_encoder", m_encoder);
+    }
 
 private:
     uint64_t m_increment;
@@ -84,6 +90,12 @@ struct dense_mono : dense_encoder {
     void visit(Visitor& visitor) {
         visitor.visit(m_num_partitions);
         visitor.visit(m_encoder);
+    }
+    template <typename Visitor>
+    void visit(const std::string _name, Visitor& visitor) {
+        visitor.visit(_name, _name);
+        visitor.visit("m_num_partitions", m_num_partitions);
+        visitor.visit("m_encoder", m_encoder);
     }
 
 private:
@@ -148,6 +160,11 @@ struct dense_interleaved : dense_encoder {
     void visit(Visitor& visitor) {
         visitor.visit(m_encoders);
     }
+    template <typename Visitor>
+    void visit(const std::string _name, Visitor& visitor) {
+        visitor.visit(_name, _name);
+        visitor.visit("m_encoders", m_encoders);
+    }
 
 private:
     std::vector<Encoder> m_encoders;
@@ -202,6 +219,13 @@ struct dense_dual : dense_encoder {
         visitor.visit(m_front_size);
         visitor.visit(m_front);
         visitor.visit(m_back);
+    }
+    template <typename Visitor>
+    void visit(const std::string _name, Visitor& visitor) {
+        visitor.visit(_name, _name);
+        visitor.visit("m_front_size", m_front_size);
+        visitor.visit("m_front", m_front);
+        visitor.visit("m_back", m_back);
     }
 
 private:

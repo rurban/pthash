@@ -8,6 +8,9 @@ PTHash is a C++ library implementing fast and compact minimal perfect hash funct
 * [*PTHash: Revisiting FCH Minimal Perfect Hashing*](https://dl.acm.org/doi/10.1145/3404835.3462849)
 * [*Parallel and External-Memory Construction of Minimal Perfect Hash Functions with PTHash*](https://ieeexplore.ieee.org/document/10210677)
 
+**static-hash** is rurban's attempt to emit a static C++ header, without dynamic vectors,
+to get rid of all this insance C++ STL dynamic memory and deserialization overhead. This is a proof of concept in-work.
+
 **PHOBIC** revisits the idea to build smaller functions in less time, for the same query performance as described in the paper
 
 * [*PHOBIC: Perfect Hashing with Optimized Bucket Sizes and Interleaved Coding*](https://arxiv.org/pdf/2404.18497), Stefan Hermann, Hans-Peter Lehmann, Giulio Ermanno Pibiri, Peter Sanders, and Stefan Walzer. To appear in ESA 2024.

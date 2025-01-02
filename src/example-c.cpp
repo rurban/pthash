@@ -7,7 +7,7 @@ int main() {
     using namespace pthash;
 
     /* Generate 1M random 64-bit keys as input data. */
-    static const uint64_t num_keys = 1000000;
+    static const uint64_t num_keys = 10000;
     static const uint64_t seed = 1234567890;
     std::cout << "generating input data..." << std::endl;
     std::vector<uint64_t> keys = distinct_keys<uint64_t>(num_keys, default_hash64(seed, seed));
@@ -73,12 +73,17 @@ int main() {
         std::cout << "f(" << keys[i] << ") = " << f(keys[i]) << '\n';
     }
 
-    /* Serialize the data structure to a file. */
-    std::string output_filename("pthash.bin");
-    std::cout << "serializing the function to " << output_filename << "..." << std::endl;
+    /* Serialize the data structure to ascii and binary files */
+    std::string output_filename_c("pthash-example.h");
+    std::cout << "serializing the function to " << output_filename_c << std::endl;
+    essentials::save("f", f, output_filename_c.c_str());
+
+    std::string output_filename("example-c.bin");
+    std::cout << "serializing the function to " << output_filename << std::endl;
     essentials::save(f, output_filename.c_str());
 
     {
+        std::cout << "load the serialized function from " << output_filename << std::endl;
         /* Now reload from disk and query. */
         pthash_type other;
         essentials::load(other, output_filename.c_str());
@@ -88,6 +93,6 @@ int main() {
         }
     }
 
-    //std::remove(output_filename.c_str());
+    std::remove(output_filename.c_str());
     return 0;
 }

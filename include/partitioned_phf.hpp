@@ -19,6 +19,12 @@ private:
             visitor.visit(offset);
             visitor.visit(f);
         }
+        template <typename Visitor>
+        void visit(const std::string name, Visitor& visitor) {
+            visitor.visit(name, name);
+            visitor.visit("m_offset", offset);
+            visitor.visit("m_f", f);
+        }
 
         uint64_t offset;
         single_phf<Hasher, Bucketer, Encoder, Minimal, Search> f;
@@ -124,6 +130,15 @@ public:
         visitor.visit(m_table_size);
         visitor.visit(m_partitioner);
         visitor.visit(m_partitions);
+    }
+    template <typename Visitor>
+    void visit(const std::string name, Visitor& visitor) {
+        visitor.visit(name, name);
+        visitor.visit("m_seed", m_seed);
+        visitor.visit("m_num_keys", m_num_keys);
+        visitor.visit("m_table_size", m_table_size);
+        visitor.visit("m_partitioner", m_partitioner);
+        visitor.visit("m_partitions", m_partitions);
     }
 
 private:

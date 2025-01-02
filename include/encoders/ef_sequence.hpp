@@ -85,6 +85,13 @@ struct ef_sequence {
         visitor.visit(m_high_bits_d1);
         visitor.visit(m_low_bits);
     }
+    template <typename Visitor>
+    void visit(const std::string name, Visitor& visitor) {
+        visitor.visit(name, name);
+        visitor.visit("m_high_bits", m_high_bits);
+        visitor.visit("m_high_bits_d1", m_high_bits_d1);
+        visitor.visit("m_low_bits", m_low_bits);
+    }
 
 private:
     bit_vector m_high_bits;

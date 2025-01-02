@@ -92,6 +92,14 @@ struct darray {
         visitor.visit(m_subblock_inventory);
         visitor.visit(m_overflow_positions);
     }
+    template <typename Visitor>
+    void visit(const std::string name, Visitor& visitor) {
+        visitor.visit(name, name);
+        visitor.visit("m_positions", m_positions);
+        visitor.visit("m_block_inventory", m_block_inventory);
+        visitor.visit("m_subblock_inventory", m_subblock_inventory);
+        visitor.visit("m_overflow_positions", m_overflow_positions);
+    }
 
 protected:
     static void flush_cur_block(std::vector<uint64_t>& cur_block_positions,

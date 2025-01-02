@@ -122,7 +122,7 @@ void build_benchmark(Builder& builder, build_timings const& timings,
     result.print_line();
 
     if (params.output_filename != "") {
-        essentials::logger("saving data structure to disk...");
+        essentials::logger("saving data structure to " + params.output_filename + "...");
         essentials::save(f, params.output_filename.c_str());
         essentials::logger("DONE");
     }
