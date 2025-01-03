@@ -1,5 +1,5 @@
 INCS = -Iinclude -Iexternal/essentials/include -I. -Iexternal/xxHash
-example-inc: src/example-inc.cpp pthash-example.hpp
+example-inc: src/example-inc.cpp pthash-example.hpp external/essentials/include/essentials.hpp
 	$(CXX) -g -o$@ $(INCS) src/example-inc.cpp
 
 # emacs flymake-mode

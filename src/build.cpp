@@ -15,6 +15,7 @@ struct build_parameters {
     Iterator keys;
     uint64_t num_keys;
     bool check;
+    bool compile;
     uint64_t queries;
     std::string bucketer_type;
     std::string encoder_type;
@@ -31,7 +32,18 @@ void build_benchmark(Builder& builder, build_timings const& timings,
 {
     // config.print();
     Function f;
-    double encoding_microseconds = f.build(builder, config);
+    double encoding_microseconds = 0.0;
+    if (config.verbose_output) {
+        essentials::logger("building pthash...");
+    }
+    encoding_microseconds = f.build(builder, config);
+
+    if (params.compile) {
+        if (config.verbose_output) {
+            essentials::logger("compile to " + params.output_filename);
+        }
+        essentials::save("f", f, params.output_filename.c_str());
+    }
 
     // timings breakdown
     double total_microseconds = timings.partitioning_microseconds +
@@ -337,6 +349,7 @@ void build(cmd_line_parser::parser const& parser, Iterator keys, uint64_t num_ke
     params.check = parser.get<bool>("check");
     params.queries = parser.get<uint64_t>("queries");
     params.dual_encoder_tradeoff = parser.get<double>("dual_encoder_tradeoff");
+    params.compile = parser.get<bool>("compile"); // to header
 
     if (params.dual_encoder_tradeoff < 0.0 || params.dual_encoder_tradeoff > 1.0) {
         std::cerr << "invalid tradeoff" << std::endl;
@@ -373,6 +386,8 @@ void build(cmd_line_parser::parser const& parser, Iterator keys, uint64_t num_ke
 
     params.output_filename =
         (!parser.parsed("output_filename")) ? "" : parser.get<std::string>("output_filename");
+    if (params.output_filename.find(".hpp") != std::string::npos)
+        params.compile = true;
 
     build_configuration config;
     config.lambda = parser.get<double>("lambda");
@@ -458,6 +473,7 @@ int main(int argc, char** argv) {
                "-i", false);
     parser.add("output_filename", "Output file name where the function will be serialized.", "-o",
                false);
+    parser.add("compile", "Compile to .hpp", "--compile", false, true);
     parser.add("secondary_sort", "Sort buckets secondarily by increasing expected size.", "--sort",
                false, true);
     parser.add("dense_partitioning", "Activate dense partitioning.", "--dense", false, true);
