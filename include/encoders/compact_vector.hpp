@@ -183,7 +183,7 @@ struct compact_vector {
             return m_width;
         }
 
-        std::vector<uint64_t>& bits() {
+        VECTOR(uint64_t)& bits() {
             return m_bits;
         }
 
@@ -194,7 +194,7 @@ struct compact_vector {
         uint64_t m_back;
         uint64_t m_cur_block;
         int64_t m_cur_shift;
-        std::vector<uint64_t> m_bits;
+        VECTOR(uint64_t) m_bits;
     };
 
     compact_vector() : m_size(0), m_width(0), m_mask(0) {}
@@ -260,7 +260,7 @@ struct compact_vector {
         return iterator(this, pos);
     }
 
-    std::vector<uint64_t> const& bits() const {
+    VECTOR(uint64_t) const& bits() const {
         return m_bits;
     }
 
@@ -296,7 +296,7 @@ private:
     uint64_t m_size;
     uint64_t m_width;
     uint64_t m_mask;
-    std::vector<uint64_t> m_bits;
+    VECTOR(uint64_t) m_bits;
 };
 
 }  // namespace pthash

@@ -146,7 +146,7 @@ private:
     uint64_t m_num_keys;
     uint64_t m_table_size;
     range_bucketer m_partitioner;
-    std::vector<partition> m_partitions;
+    VECTOR(partition) m_partitions;
 };
 
 }  // namespace pthash

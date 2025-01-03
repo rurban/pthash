@@ -56,7 +56,7 @@ struct table_bucketer {
 private:
     Bucketer base;
     static const uint64_t FULCS = 2048;
-    std::vector<uint64_t> fulcrums;
+    VECTOR(uint64_t) fulcrums;
 };
 
 struct opt_bucketer {

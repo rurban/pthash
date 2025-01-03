@@ -11,11 +11,11 @@ struct darray {
     darray() : m_positions(0) {}
 
     void build(bit_vector const& bv) {
-        std::vector<uint64_t> const& data = bv.data();
-        std::vector<uint64_t> cur_block_positions;
-        std::vector<int64_t> block_inventory;
-        std::vector<uint16_t> subblock_inventory;
-        std::vector<uint64_t> overflow_positions;
+        VECTOR(uint64_t) const& data = bv.data();
+        VECTOR(uint64_t) cur_block_positions;
+        VECTOR(int64_t) block_inventory;
+        VECTOR(uint16_t) subblock_inventory;
+        VECTOR(uint64_t) overflow_positions;
 
         for (size_t word_idx = 0; word_idx < data.size(); ++word_idx) {
             size_t cur_pos = word_idx << 6;
@@ -62,7 +62,7 @@ struct darray {
         size_t reminder = idx & (subblock_size - 1);
         if (!reminder) return start_pos;
 
-        std::vector<uint64_t> const& data = bv.data();
+        VECTOR(uint64_t) const& data = bv.data();
         size_t word_idx = start_pos >> 6;
         size_t word_shift = start_pos & 63;
         uint64_t word = WordGetter()(data, word_idx) & (uint64_t(-1) << word_shift);
@@ -102,10 +102,10 @@ struct darray {
     }
 
 protected:
-    static void flush_cur_block(std::vector<uint64_t>& cur_block_positions,
-                                std::vector<int64_t>& block_inventory,
-                                std::vector<uint16_t>& subblock_inventory,
-                                std::vector<uint64_t>& overflow_positions) {
+    static void flush_cur_block(VECTOR(uint64_t)& cur_block_positions,
+                                VECTOR(int64_t)& block_inventory,
+                                VECTOR(uint16_t)& subblock_inventory,
+                                VECTOR(uint64_t)& overflow_positions) {
         if (cur_block_positions.back() - cur_block_positions.front() < max_in_block_distance) {
             block_inventory.push_back(int64_t(cur_block_positions.front()));
             for (size_t i = 0; i < cur_block_positions.size(); i += subblock_size) {
@@ -129,19 +129,19 @@ protected:
     static const size_t max_in_block_distance = 1 << 16;
 
     size_t m_positions;
-    std::vector<int64_t> m_block_inventory;
-    std::vector<uint16_t> m_subblock_inventory;
-    std::vector<uint64_t> m_overflow_positions;
+    VECTOR(int64_t) m_block_inventory;
+    VECTOR(uint16_t) m_subblock_inventory;
+    VECTOR(uint64_t) m_overflow_positions;
 };
 
 struct identity_getter {
-    uint64_t operator()(std::vector<uint64_t> const& data, size_t idx) const {
+    uint64_t operator()(VECTOR(uint64_t) const& data, size_t idx) const {
         return data[idx];
     }
 };
 
 struct negating_getter {
-    uint64_t operator()(std::vector<uint64_t> const& data, size_t idx) const {
+    uint64_t operator()(VECTOR(uint64_t) const& data, size_t idx) const {
         return ~data[idx];
     }
 };

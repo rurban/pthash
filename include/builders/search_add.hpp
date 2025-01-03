@@ -18,7 +18,7 @@ void search_sequential_add(const uint64_t num_keys, const uint64_t num_buckets,
     const uint64_t table_size = taken.size();
     const uint64_t M = fastmod::computeM_u32(table_size);
 
-    std::vector<uint64_t> positions;
+    VECTOR(uint64_t) positions;
     positions.reserve(max_bucket_size);
 
     search_logger log(num_keys, num_buckets);
@@ -97,7 +97,7 @@ void search_parallel_add(const uint64_t num_keys, const uint64_t num_buckets,
     static_assert(next_bucket_idx.is_always_lock_free);
 
     auto exe = [&](uint64_t local_bucket_idx, bucket_t bucket) {
-        std::vector<uint64_t> positions;
+        VECTOR(uint64_t) positions;
         positions.reserve(max_bucket_size);
 
         while (true) {

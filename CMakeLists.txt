@@ -68,17 +68,19 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   add_executable(example-c src/example-c.cpp)
   target_link_libraries(example-c PRIVATE PTHASH)
 
-  #add_custom_target(pthash-example.hpp
-  #  DEPENDS example-c
-  #  COMMAND src/example-c)
+  add_custom_target(pthash-example.hpp
+    COMMAND src/example-c
+    DEPENDS example-c)
   add_executable(example-inc src/example-inc.cpp pthash-example.hpp)
   target_link_libraries(example-inc PRIVATE PTHASH)
 
+  enable_testing()
   file(GLOB TEST_SOURCES test/test_*.cpp)
   foreach(TEST_SRC ${TEST_SOURCES})
     get_filename_component (TEST_SRC_NAME ${TEST_SRC} NAME_WE) # without extension
     add_executable(${TEST_SRC_NAME} ${TEST_SRC})
     add_test(${TEST_SRC_NAME} ${TEST_SRC_NAME})
     target_link_libraries(${TEST_SRC_NAME} PRIVATE PTHASH)
+    add_test(${TEST_SRC_NAME} ${TEST_SRC_NAME})
   endforeach(TEST_SRC)
 endif()

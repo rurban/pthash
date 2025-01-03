@@ -236,11 +236,11 @@ struct internal_memory_builder_partitioned_phf {
         return m_bucketer;
     }
 
-    std::vector<uint64_t> const& offsets() const {
+    VECTOR(uint64_t) const& offsets() const {
         return m_offsets;
     }
 
-    std::vector<uint64_t> const& free_slots() const {
+    VECTOR(uint64_t) const& free_slots() const {
         return m_free_slots;
     }
 
@@ -372,8 +372,8 @@ private:
     uint64_t m_num_partitions;
     uint64_t m_num_buckets_per_partition;
     range_bucketer m_bucketer;
-    std::vector<uint64_t> m_offsets;
-    std::vector<uint64_t> m_free_slots;  // for dense partitioning
+    VECTOR(uint64_t) m_offsets;
+    VECTOR(uint64_t) m_free_slots;  // for dense partitioning
     std::vector<internal_memory_builder_single_phf<hasher_type, bucketer_type>> m_builders;
 };
 

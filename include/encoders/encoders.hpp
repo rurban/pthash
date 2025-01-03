@@ -120,7 +120,7 @@ struct partitioned_compact {
 
 private:
     uint64_t m_size;
-    std::vector<uint32_t> m_bits_per_value;
+    VECTOR(uint32_t) m_bits_per_value;
     bit_vector m_values;
 };
 

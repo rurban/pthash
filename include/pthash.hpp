@@ -1,5 +1,7 @@
 #pragma once
 
+#define ALLOCATOR std::allocator
+#define VECTOR(T) std::vector<T>
 #include "encoders/encoders.hpp"
 #include "encoders/dense_encoders.hpp"
 

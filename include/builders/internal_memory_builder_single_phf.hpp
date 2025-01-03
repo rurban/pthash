@@ -146,7 +146,7 @@ struct internal_memory_builder_single_phf {
         return m_bucketer;
     }
 
-    std::vector<uint64_t> const& pilots() const {
+    VECTOR(uint64_t) const& pilots() const {
         return m_pilots;
     }
 
@@ -154,7 +154,7 @@ struct internal_memory_builder_single_phf {
         return m_taken;
     }
 
-    std::vector<uint64_t> const& free_slots() const {
+    VECTOR(uint64_t) const& free_slots() const {
         return m_free_slots;
     }
 
@@ -175,8 +175,8 @@ private:
     uint64_t m_table_size;
     Bucketer m_bucketer;
     bit_vector_builder m_taken;
-    std::vector<uint64_t> m_pilots;
-    std::vector<uint64_t> m_free_slots;
+    VECTOR(uint64_t) m_pilots;
+    VECTOR(uint64_t) m_free_slots;
 
     template <typename RandomAccessIterator>
     struct hash_generator {

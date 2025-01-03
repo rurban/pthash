@@ -139,7 +139,7 @@ struct bit_vector_builder {
         std::swap(m_cur_word, other.m_cur_word);
     }
 
-    std::vector<uint64_t>& data() {
+    VECTOR(uint64_t)& data() {
         return m_bits;
     }
 
@@ -169,7 +169,7 @@ struct bit_vector_builder {
     }
 
 private:
-    std::vector<uint64_t> m_bits;
+    VECTOR(uint64_t) m_bits;
     uint64_t m_size;
     uint64_t* m_cur_word;
 };
@@ -251,7 +251,7 @@ struct bit_vector {
         return block * 64 + ret;
     }
 
-    std::vector<uint64_t> const& data() const {
+    VECTOR(uint64_t) const& data() const {
         return m_bits;
     }
 
@@ -337,7 +337,7 @@ struct bit_vector {
 
 protected:
     size_t m_size;
-    std::vector<uint64_t> m_bits;
+    VECTOR(uint64_t) m_bits;
 };
 
 }  // namespace pthash
