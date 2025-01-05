@@ -21,16 +21,16 @@ public:
     void deallocate(T* p, std::size_t n) noexcept {
         (void)p; (void)n;
     }
-
+#if 0
     template<typename U, typename... Args>
     void construct(U* p, Args&&... args) {
         (void)p;
     }
-
     template<typename U>
     void destroy(U* p) noexcept {
         (void)p;
     }
+#endif
 
     friend bool operator==(const noAlloc&, const noAlloc&) { return true; }
     friend bool operator!=(const noAlloc&, const noAlloc&) { return false; }

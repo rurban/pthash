@@ -11,44 +11,37 @@ if(NOT TARGET PTHASH)
   target_include_directories(PTHASH INTERFACE ./include)
   target_include_directories(PTHASH INTERFACE .)
 
+  MESSAGE(STATUS "Compiler " ${CMAKE_CXX_COMPILER_ID} " for processor " ${CMAKE_HOST_SYSTEM_PROCESSOR})
   target_compile_features(PTHASH INTERFACE cxx_std_17)
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    target_compile_options(PTHASH INTERFACE -stdlib=libc++)
+    MESSAGE(STATUS "Compiling with flags: -stdlib=libc++ -Wno-unknown-attributes")
+    add_compile_options(-stdlib=libc++ -Wno-unknown-attributes)
   endif()
-
-  MESSAGE(STATUS "Compiling for processor: " ${CMAKE_HOST_SYSTEM_PROCESSOR})
 
   if (UNIX AND (CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64"))
     MESSAGE(STATUS "Compiling with flags: -march=native -mbmi2 -msse4.2")
-    target_compile_options(PTHASH INTERFACE -march=native)
+    add_compile_options(-march=native)
     # Flags for PTHASH:
-    target_compile_options(PTHASH INTERFACE -mbmi2 -msse4.2) # for hardware popcount and pdep
+    add_compile_options(-mbmi2 -msse4.2) # for hardware popcount and pdep
   endif()
 
   if (PTHASH_ENABLE_LARGE_BUCKET_ID_TYPE)
     MESSAGE(STATUS "bucket_id_type is uint64_t")
-    target_compile_options(PTHASH INTERFACE -DPTHASH_ENABLE_LARGE_BUCKET_ID_TYPE)
+    add_compile_options(-DPTHASH_ENABLE_LARGE_BUCKET_ID_TYPE)
   endif()
 
   if (UNIX)
-    target_compile_options(PTHASH INTERFACE -pthread)
-    target_compile_options(PTHASH INTERFACE -ggdb)
-    if (${CMAKE_VERSION} VERSION_GREATER "3.18.0")
-      include(CheckCompilerFlag)
-      check_compiler_flag(CXX -Wno-unknown-attributes HAVE_C_WUNKNOWN_ATTRIBUTES)
-    endif()
+    add_compile_options(-pthread)
+    add_compile_options(-ggdb)
 
-    if (HAVE_C_WUNKNOWN_ATTRIBUTES)
-      MESSAGE(STATUS "Compiling with flags: -std=c++17 -ggdb -pthread -Wall -Wextra -Wno-missing-braces -Wno-unknown-attributes -Wno-unused-function")
-      target_compile_options(PTHASH INTERFACE -Wall -Wextra -Wno-missing-braces -Wno-unknown-attributes -Wno-unused-function)
-    else()
-      MESSAGE(STATUS "Compiling with flags: -std=c++17 -ggdb -pthread -Wall -Wextra -Wno-missing-braces -Wno-unused-function")
-      target_compile_options(PTHASH INTERFACE -Wall -Wextra -Wno-missing-braces -Wno-unused-function)
-    endif()
+    MESSAGE(STATUS "Compiling with flags: -std=c++17 -ggdb -pthread -Wall -Wextra -Wno-missing-braces  -Wno-unused-function")
+    add_compile_options(-Wall -Wextra -Wno-missing-braces -Wno-unused-function)
 
     if (PTHASH_USE_SANITIZERS)
-      MESSAGE(STATUS "Using sanitizers. Compiling with flags: -fsanitize=address -fno-omit-frame-pointer")
-      target_compile_options(PTHASH INTERFACE -fsanitize=address -fno-omit-frame-pointer)
+      set(SAN_FLAGS -fsanitize=address -fno-omit-frame-pointer -fdiagnostics-all-candidates)
+      MESSAGE(STATUS "Using sanitizers. Compiling with flags: ${SAN_FLAGS}")
+      add_compile_options(${SAN_FLAGS})
+      add_link_options(${SAN_FLAGS})
     endif()
   endif()
 
@@ -68,8 +61,8 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   add_executable(example-c src/example-c.cpp)
   target_link_libraries(example-c PRIVATE PTHASH)
 
-  add_custom_target(pthash-example.hpp
-    COMMAND src/example-c
+  add_custom_command(OUTPUT pthash-example.hpp
+    COMMAND ./example-c
     DEPENDS example-c)
   add_executable(example-inc src/example-inc.cpp pthash-example.hpp)
   target_link_libraries(example-inc PRIVATE PTHASH)
@@ -83,4 +76,5 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     target_link_libraries(${TEST_SRC_NAME} PRIVATE PTHASH)
     add_test(${TEST_SRC_NAME} ${TEST_SRC_NAME})
   endforeach(TEST_SRC)
+  add_test(example-inc ./example-inc)
 endif()

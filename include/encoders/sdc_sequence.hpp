@@ -6,7 +6,10 @@
 namespace pthash {
 
 struct sdc_sequence {
-    sdc_sequence() : m_size(0) {}
+#ifdef PTHASH_STATIC
+    sdc_sequence(uint64_t size, bit_vector codewords, ef_sequence<false> index)
+        : m_size(size), m_codewords(codewords), m_index(index) {}
+#endif
 
     template <typename Iterator>
     void build(Iterator begin, uint64_t n) {
@@ -57,12 +60,17 @@ struct sdc_sequence {
         visitor.visit(m_codewords);
         visitor.visit(m_index);
     }
+
     template <typename Visitor>
     void visit(const std::string _name, Visitor& visitor) {
-        visitor.visit(_name, _name);
+        (void)_name;
+        visitor.dump("sdc_sequence(");
         visitor.visit("m_size", m_size);
+        visitor.dump(", ");
         visitor.visit("m_codewords", m_codewords);
+        visitor.dump(",\n    ");
         visitor.visit("m_index", m_index);
+        visitor.dump(")");
     }
 
 private:

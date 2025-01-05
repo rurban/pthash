@@ -9,6 +9,14 @@ namespace detail {
 template <typename WordGetter>
 struct darray {
     darray() : m_positions(0) {}
+#ifdef PTHASH_STATIC
+    darray(size_t positions, VECTOR(int64_t) block_inventory, VECTOR(uint16_t) subblock_inventory,
+           VECTOR(uint64_t) overflow_positions)
+        : m_positions(positions)
+        , m_block_inventory(block_inventory)
+        , m_subblock_inventory(subblock_inventory)
+        , m_overflow_positions(overflow_positions) {};
+#endif
 
     void build(bit_vector const& bv) {
         VECTOR(uint64_t) const& data = bv.data();
@@ -92,13 +100,19 @@ struct darray {
         visitor.visit(m_subblock_inventory);
         visitor.visit(m_overflow_positions);
     }
+
     template <typename Visitor>
-    void visit(const std::string name, Visitor& visitor) {
-        visitor.visit(name, name);
+    inline void visit(const std::string, Visitor& visitor) {
+        const std::string ctor = essentials::demangle(typeid(*this).name()) + "(";
+        visitor.dump(ctor);
         visitor.visit("m_positions", m_positions);
+        visitor.dump(",\n  ");
         visitor.visit("m_block_inventory", m_block_inventory);
+        visitor.dump(",\n  ");
         visitor.visit("m_subblock_inventory", m_subblock_inventory);
+        visitor.dump(",\n  ");
         visitor.visit("m_overflow_positions", m_overflow_positions);
+        visitor.dump(")");
     }
 
 protected:

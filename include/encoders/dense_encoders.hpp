@@ -8,6 +8,11 @@ namespace pthash {
 
 template <typename Encoder>
 struct diff {
+#ifdef PTHASH_STATIC
+    diff();
+    diff(uint64_t increment, Encoder encoder) : m_increment(increment), m_encoder(encoder) {}
+#endif
+
     template <typename Iterator>
     void encode(Iterator begin, const uint64_t size, const uint64_t increment) {
         m_increment = increment;
@@ -43,11 +48,15 @@ struct diff {
         visitor.visit(m_increment);
         visitor.visit(m_encoder);
     }
+
     template <typename Visitor>
     void visit(const std::string _name, Visitor& visitor) {
-        visitor.visit(_name, _name);
+        (void)_name;
+        visitor.dump("diff(");
         visitor.visit("m_increment", m_increment);
+        visitor.dump(", ");
         visitor.visit("m_encoder", m_encoder);
+        visitor.dump(")");
     }
 
 private:
@@ -60,6 +69,12 @@ struct dense_encoder {
 
 template <typename Encoder>
 struct dense_mono : dense_encoder {
+#ifdef PTHASH_STATIC
+    dense_mono();
+    dense_mono(uint64_t num_partitions, Encoder encoder)
+        : m_num_partitions(num_partitions), m_encoder(encoder) {}
+#endif
+
     template <typename Iterator>
     void encode(Iterator begin,                            //
                 const uint64_t num_partitions,             //
@@ -91,11 +106,15 @@ struct dense_mono : dense_encoder {
         visitor.visit(m_num_partitions);
         visitor.visit(m_encoder);
     }
+
     template <typename Visitor>
     void visit(const std::string _name, Visitor& visitor) {
-        visitor.visit(_name, _name);
+        (void)_name;
+        visitor.dump("dense_mono(");
         visitor.visit("m_num_partitions", m_num_partitions);
+        visitor.dump(", ");
         visitor.visit("m_encoder", m_encoder);
+        visitor.dump(")");
     }
 
 private:
@@ -105,6 +124,11 @@ private:
 
 template <typename Encoder>
 struct dense_interleaved : dense_encoder {
+#ifdef PTHASH_STATIC
+    dense_interleaved();
+    dense_interleaved(VECTOR(Encoder) encoders) : m_encoders(encoders) {}
+#endif
+
     template <typename Iterator>
     void encode(Iterator begin,                            //
                 const uint64_t num_partitions,             //
@@ -118,7 +142,8 @@ struct dense_interleaved : dense_encoder {
         } else {
             auto exe = [&](uint64_t beginEncoder, uint64_t endEncoder) {
                 for (; beginEncoder != endEncoder; ++beginEncoder) {
-                    m_encoders[beginEncoder].encode(begin + beginEncoder * num_partitions, num_partitions);
+                    m_encoders[beginEncoder].encode(begin + beginEncoder * num_partitions,
+                                                    num_partitions);
                 }
             };
 
@@ -160,18 +185,27 @@ struct dense_interleaved : dense_encoder {
     void visit(Visitor& visitor) {
         visitor.visit(m_encoders);
     }
+
     template <typename Visitor>
     void visit(const std::string _name, Visitor& visitor) {
-        visitor.visit(_name, _name);
+        (void)_name;
+        visitor.dump("dense_interleaved(");
         visitor.visit("m_encoders", m_encoders);
+        visitor.dump(")");
     }
 
 private:
-    std::vector<Encoder> m_encoders;
+    VECTOR(Encoder) m_encoders;
 };
 
 template <typename Front, typename Back, uint64_t numerator = 1, uint64_t denominator = 3>
 struct dense_dual : dense_encoder {
+#ifdef PTHASH_STATIC
+    dense_dual();
+    dense_dual(uint64_t front_size, Front front, Back back)
+        : m_front_size(front_size), m_front(front), m_back(back) {}
+#endif
+
     template <typename Iterator>
     void encode(Iterator begin,                            //
                 const uint64_t num_partitions,             //
@@ -197,7 +231,8 @@ struct dense_dual : dense_encoder {
     }
 
     static std::string name() {
-        return Front::name() + "-" + Back::name() + "-" + std::to_string(static_cast<double>(numerator)/denominator);
+        return Front::name() + "-" + Back::name() + "-" +
+               std::to_string(static_cast<double>(numerator) / denominator);
     }
 
     size_t num_bits() const {
@@ -220,12 +255,17 @@ struct dense_dual : dense_encoder {
         visitor.visit(m_front);
         visitor.visit(m_back);
     }
+
     template <typename Visitor>
     void visit(const std::string _name, Visitor& visitor) {
-        visitor.visit(_name, _name);
+        (void)_name;
+        visitor.dump("dense_dual(");
         visitor.visit("m_front_size", m_front_size);
+        visitor.dump(",\n    ");
         visitor.visit("m_front", m_front);
+        visitor.dump(",\n    ");
         visitor.visit("m_back", m_back);
+        visitor.dump(")");
     }
 
 private:

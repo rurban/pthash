@@ -197,7 +197,11 @@ struct compact_vector {
         VECTOR(uint64_t) m_bits;
     };
 
-    compact_vector() : m_size(0), m_width(0), m_mask(0) {}
+#ifdef PTHASH_STATIC
+    compact_vector();
+    compact_vector(uint64_t size, uint64_t width, uint64_t mask, VECTOR(uint64_t) bits)
+        : m_size(size), m_width(width), m_mask(mask), m_bits(bits) {}
+#endif
 
     template <typename Iterator>
     void build(Iterator begin, uint64_t n) {
@@ -282,14 +286,19 @@ struct compact_vector {
         visitor.visit(m_mask);
         visitor.visit(m_bits);
     }
+
     template <typename Visitor>
     void visit(const std::string name, Visitor& visitor) {
-        // struct compact_vector name(m_size(), m_width(), m_mask(), m_bits());
-        visitor.visit(name, name);
+        (void)name;
+        visitor.dump("\n      compact_vector(");
         visitor.visit("m_size", m_size);
+        visitor.dump(", ");
         visitor.visit("m_width", m_width);
+        visitor.dump(", ");
         visitor.visit("m_mask", m_mask);
+        visitor.dump(",\n    ");
         visitor.visit("m_bits", m_bits);
+        visitor.dump(")");
     }
 
 private:

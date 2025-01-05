@@ -10,6 +10,11 @@
 namespace pthash {
 
 struct rice_sequence {
+#ifdef PTHASH_STATIC
+    rice_sequence(bit_vector high_bits, darray1 high_bits_d1, compact_vector low_bits)
+        : m_high_bits(high_bits), m_high_bits_d1(high_bits_d1), m_low_bits(low_bits) {}
+#endif
+
     template <typename Iterator>
     void encode(Iterator begin, const uint64_t n) {
         if (n == 0) return;
@@ -55,12 +60,17 @@ struct rice_sequence {
         visitor.visit(m_high_bits_d1);
         visitor.visit(m_low_bits);
     }
+
     template <typename Visitor>
     void visit(const std::string _name, Visitor& visitor) {
-        visitor.visit(_name, _name);
+        (void)_name;
+        visitor.dump("rice_sequence(");
         visitor.visit("m_high_bits", m_high_bits);
+        visitor.dump(",\n    ");
         visitor.visit("m_high_bits_d1", m_high_bits_d1);
+        visitor.dump(",\n    ");
         visitor.visit("m_low_bits", m_low_bits);
+        visitor.dump(")");
     }
 
 private:

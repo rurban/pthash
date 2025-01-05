@@ -8,7 +8,11 @@ namespace pthash {
 
 template <bool encode_prefix_sum = false>
 struct ef_sequence {
-    ef_sequence() {}
+#ifdef PTHASH_STATIC
+    ef_sequence();
+    ef_sequence(bit_vector high_bits, darray1 high_bits_d1, compact_vector low_bits)
+        : m_high_bits(high_bits), m_high_bits_d1(high_bits_d1), m_low_bits(low_bits) {}
+#endif
 
     template <typename Iterator>
     void encode(Iterator begin, uint64_t n) {
@@ -85,12 +89,17 @@ struct ef_sequence {
         visitor.visit(m_high_bits_d1);
         visitor.visit(m_low_bits);
     }
+
     template <typename Visitor>
     void visit(const std::string name, Visitor& visitor) {
-        visitor.visit(name, name);
+        (void)name;
+        visitor.dump("ef_sequence(");
         visitor.visit("m_high_bits", m_high_bits);
+        visitor.dump(",\n    ");
         visitor.visit("m_high_bits_d1", m_high_bits_d1);
+        visitor.dump(",\n    ");
         visitor.visit("m_low_bits", m_low_bits);
+        visitor.dump(")");
     }
 
 private:

@@ -176,6 +176,9 @@ private:
 
 struct bit_vector {
     bit_vector() : m_size(0) {}
+#ifdef PTHASH_STATIC
+    bit_vector(uint64_t size, VECTOR(uint64_t) bits) : m_size(size), m_bits(bits) {}
+#endif
 
     void build(bit_vector_builder* in) {
         m_size = in->size();
@@ -327,12 +330,15 @@ struct bit_vector {
         visitor.visit(m_size);
         visitor.visit(m_bits);
     }
+
     template <typename Visitor>
     void visit(const std::string name, Visitor& visitor) {
-        //struct bit_vector name(m_size(), m_bits());
-        visitor.visit(name, name);
+        (void)name;
+        visitor.dump("\n    bit_vector(");
         visitor.visit("m_size", m_size);
+        visitor.dump(",\n    ");
         visitor.visit("m_bits", m_bits);
+        visitor.dump(")");
     }
 
 protected:

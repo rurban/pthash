@@ -13,6 +13,11 @@
 namespace pthash {
 
 struct compact {
+#ifdef PTHASH_STATIC
+    compact();
+    compact(compact_vector values) : m_values(values) {}
+#endif
+
     template <typename Iterator>
     void encode(Iterator begin, const uint64_t n) {
         m_values.build(begin, n);
@@ -38,11 +43,14 @@ struct compact {
     void visit(Visitor& visitor) {
         visitor.visit(m_values);
     }
+
     template <typename Visitor>
     void visit(const std::string _name, Visitor& visitor) {
-        visitor.visit(_name, _name);
+        (void)_name;
+        visitor.dump("compact(");
         visitor.visit("m_values", m_values);
-    }
+        visitor.dump(")");
+   }
 
 private:
     compact_vector m_values;
@@ -51,6 +59,12 @@ private:
 struct partitioned_compact {
     static const uint64_t partition_size = 256;
     static_assert(partition_size > 0);
+
+#ifdef PTHASH_STATIC
+    partitioned_compact();
+    partitioned_compact(uint64_t size, VECTOR(uint32_t) bits_per_value, bit_vector values)
+        : m_size(size), m_bits_per_value(bits_per_value), m_values(values) {}
+#endif
 
     template <typename Iterator>
     void encode(Iterator begin, const uint64_t n) {
@@ -110,12 +124,17 @@ struct partitioned_compact {
         visitor.visit(m_bits_per_value);
         visitor.visit(m_values);
     }
+
     template <typename Visitor>
     void visit(const std::string _name, Visitor& visitor) {
-        visitor.visit(_name, _name);
+        (void)_name;
+        visitor.dump("partitioned_compact(");
         visitor.visit("m_size", m_size);
+        visitor.dump(", ");
         visitor.visit("m_bits_per_value", m_bits_per_value);
+        visitor.dump(",\n    ");
         visitor.visit("m_values", m_values);
+        visitor.dump(")");
     }
 
 private:
@@ -160,6 +179,11 @@ std::pair<std::vector<uint64_t>, std::vector<uint64_t>> compute_ranks_and_dictio
 }
 
 struct dictionary {
+#ifdef PTHASH_STATIC
+    dictionary();
+    dictionary(compact_vector ranks, compact_vector dict) : m_ranks(ranks), m_dict(dict) {}
+#endif
+
     template <typename Iterator>
     void encode(Iterator begin, const uint64_t n) {
         auto [ranks, dict] = compute_ranks_and_dictionary(begin, n);
@@ -189,11 +213,15 @@ struct dictionary {
         visitor.visit(m_ranks);
         visitor.visit(m_dict);
     }
+
     template <typename Visitor>
     void visit(const std::string _name, Visitor& visitor) {
-        visitor.visit(_name, _name);
+        (void)_name;
+        visitor.dump("\n    dictionary(");
         visitor.visit("m_ranks", m_ranks);
+        visitor.dump(",\n    ");
         visitor.visit("m_dict", m_dict);
+        visitor.dump(")");
     }
 
 private:
@@ -202,6 +230,11 @@ private:
 };
 
 struct elias_fano {
+#ifdef PTHASH_STATIC
+    elias_fano();
+    elias_fano(ef_sequence<true> values) : m_values(values) {}
+#endif
+
     template <typename Iterator>
     void encode(Iterator begin, const uint64_t n) {
         m_values.encode(begin, n);
@@ -228,10 +261,13 @@ struct elias_fano {
     void visit(Visitor& visitor) {
         visitor.visit(m_values);
     }
+
     template <typename Visitor>
     void visit(const std::string _name, Visitor& visitor) {
-        visitor.visit(_name, _name);
+        (void)_name;
+        visitor.dump("elias_fano(");
         visitor.visit("m_values", m_values);
+        visitor.dump(")");
     }
 
 private:
@@ -239,6 +275,11 @@ private:
 };
 
 struct sdc {
+#ifdef PTHASH_STATIC
+    sdc();
+    sdc(sdc_sequence ranks, compact_vector dict) : m_ranks(ranks), m_dict(dict) {}
+#endif
+
     template <typename Iterator>
     void encode(Iterator begin, const uint64_t n) {
         auto [ranks, dict] = compute_ranks_and_dictionary(begin, n);
@@ -268,11 +309,15 @@ struct sdc {
         visitor.visit(m_ranks);
         visitor.visit(m_dict);
     }
+
     template <typename Visitor>
     void visit(const std::string _name, Visitor& visitor) {
-        visitor.visit(_name, _name);
+        (void)_name;
+        visitor.dump("sdc(");
         visitor.visit("m_ranks", m_ranks);
+        visitor.dump(",\n    ");
         visitor.visit("m_dict", m_dict);
+        visitor.dump(")");
     }
 
 private:
@@ -281,6 +326,11 @@ private:
 };
 
 struct rice {
+#ifdef PTHASH_STATIC
+    rice();
+    rice(rice_sequence values) : m_values(values) {}
+#endif
+
     template <typename Iterator>
     void encode(Iterator begin, const uint64_t n) {
         m_values.encode(begin, n);
@@ -306,10 +356,13 @@ struct rice {
     void visit(Visitor& visitor) {
         visitor.visit(m_values);
     }
+
     template <typename Visitor>
     void visit(const std::string _name, Visitor& visitor) {
-        visitor.visit(_name, _name);
+        (void)_name;
+        visitor.dump("rice(");
         visitor.visit("m_values", m_values);
+        visitor.dump(")");
     }
 
 private:
@@ -318,11 +371,23 @@ private:
 
 template <typename Front, typename Back>
 struct dual {
+#ifdef PTHASH_STATIC
+    dual();
+    dual(const Front& front, const Back& back) : m_front(front), m_back(back) {}
+#endif
+
     template <typename Iterator>
     void encode(Iterator begin, const uint64_t n) {
         size_t front_size = n * skew_bucketer::b;
         m_front.encode(begin, front_size);
         m_back.encode(begin + front_size, n - front_size);
+    }
+
+    static std::string type_name() {
+        const std::string typef = essentials::demangle(typeid(Front).name());
+        const std::string typeb = essentials::demangle(typeid(Back).name());
+        const std::string name = "dual<" + typef + ", " + typeb + ">";
+        return name;
     }
 
     static std::string name() {
@@ -343,11 +408,16 @@ struct dual {
         visitor.visit(m_front);
         visitor.visit(m_back);
     }
+
     template <typename Visitor>
     void visit(const std::string _name, Visitor& visitor) {
-        visitor.visit(_name, _name);
+        (void)_name;
+        const std::string ctor = type_name() + "(";
+        visitor.dump(ctor);
         visitor.visit("m_front", m_front);
+        visitor.dump(", ");
         visitor.visit("m_back", m_back);
+        visitor.dump(")");
     }
 
 private:

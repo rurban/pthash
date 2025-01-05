@@ -14,16 +14,25 @@ struct partitioned_phf {
                   "Dense encoders are only for dense PTHash. Select another encoder.");
 private:
     struct partition {
+#ifdef PTHASH_STATIC
+        partition(uint64_t _offset, single_phf<Hasher, Bucketer, Encoder, Minimal, Search> f_)
+            : offset(_offset), f(f_) {}
+#endif
+
         template <typename Visitor>
         void visit(Visitor& visitor) {
             visitor.visit(offset);
             visitor.visit(f);
         }
+
         template <typename Visitor>
         void visit(const std::string name, Visitor& visitor) {
-            visitor.visit(name, name);
+            (void)name;
+            visitor.dump("partition(");
             visitor.visit("m_offset", offset);
+            visitor.dump(", ");
             visitor.visit("m_f", f);
+            visitor.dump(")");
         }
 
         uint64_t offset;
@@ -91,6 +100,22 @@ public:
         return to_microseconds(stop - start);
     }
 
+#ifdef PTHASH_STATIC
+    partitioned_phf();
+    template <typename Builder>
+    partitioned_phf(Builder& builder, build_configuration const& config) {
+        build(builder, config);
+    }
+    partitioned_phf(uint64_t seed, uint64_t num_keys,
+                    uint64_t table_size, range_bucketer partitioner,
+                    VECTOR(partition) partitions)
+        : m_seed(seed)
+        , m_num_keys(num_keys)
+        , m_table_size(table_size)
+        , m_partitioner(partitioner)
+        , m_partitions(partitions) {}
+#endif
+
     template <typename T>
     uint64_t operator()(T const& key) const {
         auto hash = Hasher::hash(key, m_seed);
@@ -131,14 +156,31 @@ public:
         visitor.visit(m_partitioner);
         visitor.visit(m_partitions);
     }
+
     template <typename Visitor>
     void visit(const std::string name, Visitor& visitor) {
-        visitor.visit(name, name);
+        (void)name;
+        visitor.dump(R"(#pragma once
+#include <stdlib.h>
+#include <stdint.h>
+#include "pthash-static.hpp"
+
+uint64_t pthash_lookup(uint64_t key) {
+  using namespace pthash;
+  )");
+        std::string type = essentials::demangle(typeid(*this).name());
+        visitor.dump(type);
+        visitor.dump(" f(\n    ");
         visitor.visit("m_seed", m_seed);
+        visitor.dump(",\n    ");
         visitor.visit("m_num_keys", m_num_keys);
+        visitor.dump(",\n    ");
         visitor.visit("m_table_size", m_table_size);
+        visitor.dump(",\n    ");
         visitor.visit("m_partitioner", m_partitioner);
+        visitor.dump(",\n    ");
         visitor.visit("m_partitions", m_partitions);
+        visitor.dump(");\n  return f(key);\n}");
     }
 
 private:

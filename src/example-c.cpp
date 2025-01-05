@@ -77,7 +77,7 @@ int main(int argc, char** argv) {
         }
 
         /* Serialize the data structure to ascii and binary files */
-        std::string output_filename_c("pthash-example.h");
+        std::string output_filename_c("pthash-example.hpp");
         std::cout << "serializing the function to " << output_filename_c << std::endl;
         essentials::save("f", f, output_filename_c.c_str());
 
@@ -121,7 +121,7 @@ int main(int argc, char** argv) {
         }
 
         /* Serialize the data structure to ascii and binary files */
-        std::string output_filename_c("pthash-example.h");
+        std::string output_filename_c("pthash-example.hpp");
         std::cout << "serializing the function to " << output_filename_c << std::endl;
         essentials::save("f", f, output_filename_c.c_str());
 

@@ -56,6 +56,23 @@ struct dense_partitioned_phf {
         return to_microseconds(stop - start);
     }
 
+#ifdef PTHASH_STATIC
+    dense_partitioned_phf();
+    dense_partitioned_phf(uint64_t seed, uint64_t num_keys,
+                          uint64_t table_size, range_bucketer partitioner,
+                          Bucketer bucketer, Encoder pilots,
+                          diff<compact> offsets,
+                          ef_sequence<false> free_slots)
+        : m_seed(seed)
+        , m_num_keys(num_keys)
+        , m_table_size(table_size)
+        , m_partitioner(partitioner)
+        , m_bucketer(bucketer)
+        , m_pilots(pilots)
+        , m_offsets(offsets)
+        , m_free_slots(free_slots) {}
+#endif
+
     template <typename T>
     uint64_t operator()(T const& key) const  //
     {
@@ -124,17 +141,39 @@ struct dense_partitioned_phf {
         visitor.visit(m_offsets);
         if (needsFreeArray) visitor.visit(m_free_slots);
     }
+
     template <typename Visitor>
     void visit(const std::string name, Visitor& visitor) {
-        visitor.visit(name, name);
+        (void)name;
+        visitor.dump(R"(#pragma once
+#include <stdlib.h>
+#include <stdint.h>
+#include "pthash-static.hpp"
+
+uint64_t pthash_lookup(uint64_t key) {
+  using namespace pthash;
+  )");
+        std::string type = essentials::demangle(typeid(*this).name());
+        visitor.dump(type);
+        visitor.dump(" f(\n    ");
         visitor.visit("m_seed", m_seed);
+        visitor.dump(",\n    ");
         visitor.visit("m_num_keys", m_num_keys);
+        visitor.dump(",\n    ");
         visitor.visit("m_table_size", m_table_size);
+        visitor.dump(",\n    ");
         visitor.visit("m_partitioner", m_partitioner);
+        visitor.dump(",\n    ");
         visitor.visit("m_bucketer", m_bucketer);
+        visitor.dump(",\n    ");
         visitor.visit("m_pilots", m_pilots);
+        visitor.dump(",\n    ");
         visitor.visit("m_offsets", m_offsets);
-        if (needsFreeArray) visitor.visit("m_free_slots", m_free_slots);
+        if (needsFreeArray) {
+            visitor.dump(",\n    ");
+            visitor.visit("m_free_slots", m_free_slots);
+        }
+        visitor.dump(");\n  return f(key);\n}");
     }
 
 private:
