@@ -1,11 +1,11 @@
 #pragma once
 
-#include "include/builders/util.hpp"
-#include "include/builders/search.hpp"
+#include "util.hpp"
+#include "search.hpp"
 #include "external/mm_file/include/mm_file/mm_file.hpp"
-#include "include/utils/bucketers.hpp"
-#include "include/utils/logger.hpp"
-#include "include/utils/hasher.hpp"
+#include "utils/bucketers.hpp"
+#include "utils/logger.hpp"
+#include "utils/hasher.hpp"
 
 namespace pthash {
 

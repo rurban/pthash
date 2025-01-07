@@ -6,9 +6,8 @@
 #include <vector>
 
 #include "external/bits/include/bit_vector.hpp"
-
-#include "include/builders/util.hpp"
-#include "include/utils/hasher.hpp"
+#include "builders/util.hpp"
+#include "utils/hasher.hpp"
 
 namespace pthash {
 

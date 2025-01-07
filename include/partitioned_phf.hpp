@@ -2,9 +2,9 @@
 
 #include <thread>
 
-#include "include/single_phf.hpp"
-#include "include/builders/internal_memory_builder_partitioned_phf.hpp"
-#include "include/builders/external_memory_builder_partitioned_phf.hpp"
+#include "single_phf.hpp"
+#include "builders/internal_memory_builder_partitioned_phf.hpp"
+#include "builders/external_memory_builder_partitioned_phf.hpp"
 
 namespace pthash {
 
@@ -12,6 +12,11 @@ template <typename Hasher, typename Encoder, bool Minimal>
 struct partitioned_phf {
 private:
     struct partition {
+#ifdef PTHASH_STATIC
+        partition() {}
+        partition(uint64_t offset_, single_phf<Hasher, Encoder, Minimal> f_)
+            : offset(offset_), f(f_) {}
+#endif
         template <typename Visitor>
         void visit(Visitor& visitor) const {
             visit_impl(visitor, *this);
@@ -22,6 +27,11 @@ private:
             visit_impl(visitor, *this);
         }
 
+        template <typename Visitor>
+        void visit(const std::string name, Visitor& visitor) {
+            visit_impl(name, visitor, *this);
+        }
+        
         uint64_t offset;
         single_phf<Hasher, Encoder, Minimal> f;
 
@@ -30,6 +40,15 @@ private:
         static void visit_impl(Visitor& visitor, T&& t) {
             visitor.visit(t.offset);
             visitor.visit(t.f);
+        }
+
+        template <typename Visitor, typename T>
+        static void visit_impl(const std::string, Visitor& visitor, T&& t) {
+            visitor.dump("partition(");
+            visitor.visit("offset", t.offset);
+            visitor.dump(", ");
+            visitor.visit("f", t.f);
+            visitor.dump(")");
         }
     };
 
@@ -108,6 +127,22 @@ public:
         return seconds(stop - start);
     }
 
+#ifdef PTHASH_STATIC
+    partitioned_phf();
+    template <typename Builder>
+    partitioned_phf(Builder& builder, build_configuration const& config) {
+        build(builder, config);
+    }
+    partitioned_phf(uint64_t seed, uint64_t num_keys,
+                    uint64_t table_size, uniform_bucketer bucketer,
+                    VECTOR(partition) partitions)
+        : m_seed(seed)
+        , m_num_keys(num_keys)
+        , m_table_size(table_size)
+        , m_bucketer(bucketer)
+        , m_partitions(partitions) {}
+#endif
+
     template <typename T>
     uint64_t operator()(T const& key) const {
         auto hash = Hasher::hash(key, m_seed);
@@ -161,6 +196,11 @@ public:
         visit_impl(visitor, *this);
     }
 
+    template <typename Visitor>
+    void visit(const std::string name, Visitor& visitor) {
+        visit_impl(name, visitor, *this);
+    }
+    
 private:
     template <typename Visitor, typename T>
     static void visit_impl(Visitor& visitor, T&& t) {
@@ -171,11 +211,27 @@ private:
         visitor.visit(t.m_partitions);
     }
 
+    template <typename Visitor, typename T>
+    static void visit_impl(const std::string, Visitor& visitor, T&& t) {
+        visitor.dump(pthash_static_lookup_coda(/*key_type*/)); // TODO
+        std::string type = essentials::demangle(typeid(t).name());
+        visitor.dump(type);
+        visitor.dump(" f(\n    ");
+        visitor.visit("m_seed", t.m_seed);
+        visitor.dump(",\n    ");
+        visitor.visit("m_num_keys", t.m_num_keys);
+        visitor.dump(",\n    ");
+        visitor.visit("m_table_size", t.m_table_size);
+        visitor.dump(",\n    ");
+        visitor.visit("m_partitions", t.m_partitions);
+        visitor.dump(");\n  return f(key);\n}\n");
+    }
+    
     uint64_t m_seed;
     uint64_t m_num_keys;
     uint64_t m_table_size;
     uniform_bucketer m_bucketer;
-    std::vector<partition> m_partitions;
+    VECTOR(partition) m_partitions;
 };
 
 }  // namespace pthash

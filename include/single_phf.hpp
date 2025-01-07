@@ -1,9 +1,9 @@
 #pragma once
 
-#include "include/utils/bucketers.hpp"
-#include "include/builders/util.hpp"
-#include "include/builders/internal_memory_builder_single_phf.hpp"
-#include "include/builders/external_memory_builder_single_phf.hpp"
+#include "utils/bucketers.hpp"
+#include "builders/util.hpp"
+#include "builders/internal_memory_builder_single_phf.hpp"
+#include "builders/external_memory_builder_single_phf.hpp"
 
 namespace pthash {
 
@@ -52,6 +52,28 @@ struct single_phf {
         auto stop = clock_type::now();
         return seconds(stop - start);
     }
+
+#ifdef PTHASH_STATIC
+    single_phf();
+    single_phf(uint64_t seed, uint64_t num_keys, uint64_t table_size, __uint128_t M,
+               skew_bucketer bucketer, Encoder pilots, bits::elias_fano<false, false> free_slots)
+        : m_seed(seed)
+        , m_num_keys(num_keys)
+        , m_table_size(table_size)
+        , m_M(M)
+        , m_bucketer(bucketer)
+        , m_pilots(pilots)
+        , m_free_slots(free_slots) {}
+    single_phf(uint64_t seed, uint64_t num_keys, uint64_t table_size,
+               skew_bucketer bucketer, Encoder pilots, bits::elias_fano<false, false> free_slots)
+        : m_seed(seed)
+        , m_num_keys(num_keys)
+        , m_table_size(table_size)
+        , m_M(fastmod::computeM_u64(table_size))
+        , m_bucketer(bucketer)
+        , m_pilots(pilots)
+        , m_free_slots(free_slots) {}
+#endif
 
     template <typename T>
     uint64_t operator()(T const& key) const {
@@ -106,6 +128,11 @@ struct single_phf {
         visit_impl(visitor, *this);
     }
 
+    template <typename Visitor>
+    void visit(const std::string name, Visitor& visitor) {
+        visit_impl(name, visitor, *this);
+    }
+
 private:
     template <typename Visitor, typename T>
     static void visit_impl(Visitor& visitor, T&& t) {
@@ -117,6 +144,28 @@ private:
         visitor.visit(t.m_pilots);
         visitor.visit(t.m_free_slots);
     }
+    template <typename Visitor, typename T>
+    static void visit_impl(const std::string, Visitor& visitor, T&& t) {
+        visitor.dump(pthash_static_lookup_coda(/*key_type*/)); // TODO
+        std::string type = essentials::demangle(typeid(T).name());
+        visitor.dump(type);
+        visitor.dump(" f(\n    ");
+        visitor.visit("m_seed", t.m_seed);
+        visitor.dump(",\n    ");
+        visitor.visit("m_num_keys", t.m_num_keys);
+        visitor.dump(",\n    ");
+        visitor.visit("m_table_size", t.m_table_size);
+        visitor.dump(",\n    ");
+        visitor.visit("m_M", t.m_M);
+        visitor.dump(",\n    ");
+        visitor.visit("m_bucketer", t.m_bucketer);
+        visitor.dump(",\n    ");
+        visitor.visit("m_pilots", t.m_pilots);
+        visitor.dump(",\n    ");
+        visitor.visit("m_free_slots", t.m_free_slots);
+        visitor.dump(");\n  return f(key);\n}\n");  // TODO f<key_type>()
+    }
+
     uint64_t m_seed;
     uint64_t m_num_keys;
     uint64_t m_table_size;

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "include/builders/util.hpp"
-#include "include/builders/search.hpp"
-#include "include/utils/bucketers.hpp"
-#include "include/utils/logger.hpp"
-#include "include/utils/hasher.hpp"
+#include "util.hpp"
+#include "search.hpp"
+#include "utils/bucketers.hpp"
+#include "utils/logger.hpp"
+#include "utils/hasher.hpp"
 
 namespace pthash {
 
@@ -157,11 +157,11 @@ struct internal_memory_builder_single_phf {
         return m_bucketer;
     }
 
-    std::vector<uint64_t> const& pilots() const {
+    VECTOR(uint64_t) const& pilots() const {
         return m_pilots;
     }
 
-    std::vector<uint64_t> const& free_slots() const {
+    VECTOR(uint64_t) const& free_slots() const {
         return m_free_slots;
     }
 
@@ -225,8 +225,8 @@ private:
     uint64_t m_num_buckets;
     uint64_t m_table_size;
     skew_bucketer m_bucketer;
-    std::vector<uint64_t> m_pilots;
-    std::vector<uint64_t> m_free_slots;
+    VECTOR(uint64_t) m_pilots;
+    VECTOR(uint64_t) m_free_slots;
 
     typedef std::vector<bucket_payload_pair> pairs_t;
 

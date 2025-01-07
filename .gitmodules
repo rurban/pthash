@@ -6,4 +6,5 @@
 	url = https://github.com/jermp/mm_file.git
 [submodule "external/bits"]
 	path = external/bits
-	url = https://github.com/jermp/bits.git
+	url = https://github.com/rurban/bits.git
+        branch = named-visit

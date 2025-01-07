@@ -14,6 +14,9 @@ Please, cite these papers if you use PTHash.
 
 - The [PHOBIC](https://github.com/jermp/pthash/tree/phobic) branch of PTHash introduces some algorithmic novelties to build smaller functions and accelerate construction.
 
+- **static-hash** is rurban's code generator to compile to a static C++ header, without dynamic vectors,
+to get rid of all this C++ STL dynamic memory and deserialization overhead. This is a proof of concept in-work.
+
 #### Features
 - Minimal and Non-Minimal Perfect Hash Functions
 - Space/Time Efficiency: fast lookup within compressed space

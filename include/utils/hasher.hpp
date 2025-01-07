@@ -6,11 +6,17 @@ namespace pthash {
 
 namespace util {
 
-struct high_collision_probability_runtime_error : public std::runtime_error {
-    high_collision_probability_runtime_error()
+struct high_collision_probability_runtime_error_64 : public std::runtime_error {
+    high_collision_probability_runtime_error_64()
         : std::runtime_error(
               "Using 64-bit hash codes with more than 2^30 keys can be dangerous due to "
               "collisions: use 128-bit hash codes instead.") {}
+};
+struct high_collision_probability_runtime_error_32 : public std::runtime_error {
+    high_collision_probability_runtime_error_32()
+        : std::runtime_error(
+              "Using 32-bit hash codes with more than 16442 keys can be dangerous due to "
+              "3.1% collisions: use 64-bit hash codes instead.") {}
 };
 
 template <typename Hasher>
@@ -30,9 +36,14 @@ static inline void check_hash_collision_probability(uint64_t size) {
         the probability of collision is ~0.1 (10%), which may not be
         so small for some applications.
         For n = 2^30, the probability of collision is ~0.031 (3.1%).
+        Likewise, for 32-bit hashes, the probability of 3.1% collisions is for 16442 keys,
+        and 10% for 9292 keys.
     */
     if (sizeof(typename Hasher::hash_type) * 8 == 64 and size > (1ULL << 30)) {
-        throw high_collision_probability_runtime_error();
+        throw high_collision_probability_runtime_error_64();
+    }
+    if (sizeof(typename Hasher::hash_type) * 8 == 32 and size > 16442) { // 3.1%
+        throw high_collision_probability_runtime_error_32();
     }
 }
 

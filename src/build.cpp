@@ -2,9 +2,9 @@
 #include <thread>
 #include <unordered_set>
 
-#include "external/cmd_line_parser/include/parser.hpp"
-#include "include/pthash.hpp"
-#include "src/util.hpp"
+#include "../external/cmd_line_parser/include/parser.hpp"
+#include "pthash.hpp"
+#include "util.hpp"
 
 using namespace pthash;
 
@@ -14,7 +14,7 @@ struct build_parameters {
 
     Iterator keys;
     uint64_t num_keys;
-    bool external_memory, check, lookup;
+    bool external_memory, check, compile, lookup;
     std::string encoder_type;
     std::string output_filename;
 };
@@ -23,6 +23,9 @@ template <typename Function, typename Builder, typename Iterator>
 void build_benchmark(Builder& builder, build_timings const& timings,
                      build_parameters<Iterator> const& params, build_configuration const& config) {
     Function f;
+    if (config.verbose_output) {
+        essentials::logger("building pthash...");
+    }
     double encoding_seconds = f.build(builder, config);
 
     // timings breakdown
@@ -38,9 +41,10 @@ void build_benchmark(Builder& builder, build_timings const& timings,
     }
 
     // space breakdown
-    double pt_bits_per_key = static_cast<double>(f.num_bits_for_pilots()) / f.num_keys();
-    double mapper_bits_per_key = static_cast<double>(f.num_bits_for_mapper()) / f.num_keys();
-    double bits_per_key = static_cast<double>(f.num_bits()) / f.num_keys();
+    uint64_t table_size = f.table_size();
+    double pt_bits_per_key = static_cast<double>(f.num_bits_for_pilots()) / table_size;
+    double mapper_bits_per_key = static_cast<double>(f.num_bits_for_mapper()) / table_size;
+    double bits_per_key = static_cast<double>(f.num_bits()) / table_size;
     if (config.verbose_output) {
         std::cout << "pilots: " << pt_bits_per_key << " [bits/key]" << std::endl;
         std::cout << "mapper: " << mapper_bits_per_key << " [bits/key]" << std::endl;
@@ -82,9 +86,11 @@ void build_benchmark(Builder& builder, build_timings const& timings,
     essentials::json_lines result;
 
     result.add("n", params.num_keys);
+    if (params.num_keys != table_size)
+        result.add("table_size", table_size);
     result.add("c", config.c);
     result.add("alpha", config.alpha);
-    result.add("minimal", config.minimal_output ? "true" : "false");
+    result.add("minimal", params.num_keys == table_size ? "true" : "false");
     result.add("encoder_type", Function::encoder_type::name().c_str());
     result.add("num_partitions", config.num_partitions);
     if (config.seed != constants::invalid_seed) result.add("seed", config.seed);
@@ -100,13 +106,23 @@ void build_benchmark(Builder& builder, build_timings const& timings,
     result.add("mapper_bits_per_key", mapper_bits_per_key);
     result.add("bits_per_key", bits_per_key);
     result.add("nanosec_per_key", nanosec_per_key);
+    if (params.output_filename.size())
+        result.add("output_filename", params.output_filename.c_str());
     result.print_line();
 
     if (params.output_filename != "") {
-        essentials::logger("saving data structure to disk...");
-        essentials::save(f, params.output_filename.c_str());
-        essentials::logger("DONE");
+        if (params.compile) {
+            if (config.verbose_output)
+                essentials::logger("compile to " + params.output_filename);
+            essentials::save("f", f, params.output_filename.c_str());
+        } else {
+            if (config.verbose_output)
+                essentials::logger("saving data structure to disk...");
+            essentials::save(f, params.output_filename.c_str());
+        }
     }
+    if (config.verbose_output)
+        essentials::logger("DONE");
 }
 
 template <bool partitioned, typename Encoder, typename Builder, typename Iterator>
@@ -209,6 +225,7 @@ void build(cmd_line_parser::parser const& parser, Iterator keys, uint64_t num_ke
     build_parameters<Iterator> params(keys, num_keys);
     params.external_memory = parser.get<bool>("external_memory");
     params.check = parser.get<bool>("check");
+    params.compile = parser.get<bool>("compile"); // to header
     params.lookup = parser.get<bool>("lookup");
 
     params.encoder_type = parser.get<std::string>("encoder_type");
@@ -229,6 +246,11 @@ void build(cmd_line_parser::parser const& parser, Iterator keys, uint64_t num_ke
 
     params.output_filename =
         (!parser.parsed("output_filename")) ? "" : parser.get<std::string>("output_filename");
+    if (params.compile && params.output_filename == "") {
+        params.output_filename = "pthash.hpp";
+    }
+    else if (params.output_filename.find(".hpp") != std::string::npos)
+        params.compile = true;
 
     build_configuration config;
     config.c = parser.get<double>("c");
@@ -321,12 +343,18 @@ int main(int argc, char** argv) {
     parser.add("minimal_output", "Build a minimal PHF.", "--minimal", false, true);
     parser.add("external_memory", "Build the function in external memory.", "--external", false,
                true);
+    parser.add("compile", "Compile to .hpp", "--compile", false, true);
     parser.add("verbose_output", "Verbose output during construction.", "--verbose", false, true);
     parser.add("check", "Check correctness after construction.", "--check", false, true);
     parser.add("lookup", "Measure average lookup time after construction.", "--lookup", false,
                true);
+    parser.add("version", "program version", "--version", false, true);
 
     if (!parser.parse()) return 1;
+    if (parser.parsed("version")) {
+        std::cout << "pthash v0.2.1 static" << std::endl;
+        return 0;
+    }
     if (parser.parsed("input_filename") && parser.get<std::string>("input_filename") == "-" &&
         parser.get<bool>("external_memory")) {
         if (parser.get<bool>("check") || parser.get<bool>("lookup")) {
@@ -370,7 +398,7 @@ int main(int argc, char** argv) {
         if (external_memory) {
             std::cout << "Warning: external memory construction with in-memory input" << std::endl;
         }
-        std::vector<uint64_t> keys = distinct_keys<uint64_t>(num_keys, seed);
+        VECTOR(uint64_t) keys = distinct_keys<uint64_t>(num_keys, seed);
         build(parser, keys.begin(), keys.size());
     }
 
