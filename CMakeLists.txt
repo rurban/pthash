@@ -25,28 +25,31 @@ if(NOT TARGET PTHASH)
     add_compile_options(-mbmi2 -msse4.2) # for hardware popcount and pdep
   endif()
 
+  option(PTHASH_ENABLE_ALL_ENCODERS "Compiling with all encoders" FALSE)
   if (PTHASH_ENABLE_ALL_ENCODERS)
-    MESSAGE(STATUS "compiling with all encoders")
+    MESSAGE(STATUS "Compiling with all encoders")
     add_compile_options(-DPTHASH_ENABLE_ALL_ENCODERS)
   endif()
 
+  option(PTHASH_ENABLE_LARGE_BUCKET_ID_TYPE "Set bucket_id_type to uint64_t" FALSE)
   if (PTHASH_ENABLE_LARGE_BUCKET_ID_TYPE)
-    MESSAGE(STATUS "bucket_id_type is uint64_t")
+    MESSAGE(STATUS "Compiling with bucket_id_type as uint64_t")
     add_compile_options(-DPTHASH_ENABLE_LARGE_BUCKET_ID_TYPE)
   endif()
 
   find_package(Threads REQUIRED)
   target_link_libraries(PTHASH INTERFACE Threads::Threads)
 
+  option(PTHASH_USE_SANITIZERS "Use asan,ubsan" FALSE)
   if (PTHASH_USE_SANITIZERS)
     MESSAGE(STATUS "Using sanitizers. Compiling with flags: -fsanitize=address,undefined -fno-omit-frame-pointer")
     add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer -fdiagnostics-all-candidates)
     add_link_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
   endif()
-  
-  MESSAGE(STATUS "Compiling with flags: -std=c++17 -pthread -Wall -Wextra -Wno-missing-braces  -Wno-unused-function")
+
+  MESSAGE(STATUS "Compiling with flags: -std=c++17 -pthread -Wall -Wextra -Wno-missing-braces -Wno-unused-function")
   add_compile_options(-Wall -Wextra -Wno-missing-braces -Wno-unused-function)
-  
+
   add_subdirectory(external/bits)
   target_link_libraries(PTHASH INTERFACE BITS)
 endif()
@@ -67,6 +70,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   add_executable(example-inc src/example-inc.cpp pthash-example.hpp)
   target_link_libraries(example-inc PRIVATE PTHASH)
 
+  enable_testing()
   file(GLOB TEST_SOURCES test/test_*.cpp)
   foreach(TEST_SRC ${TEST_SOURCES})
     get_filename_component (TEST_SRC_NAME ${TEST_SRC} NAME_WE) # without extension
