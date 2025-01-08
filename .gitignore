@@ -1,3 +1,6 @@
-build/
+build*/
 old/
 .DS_Store
+pthash.1
+pthash-example.hpp
+pthash-example.bin

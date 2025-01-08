@@ -296,6 +296,11 @@ void build(cmd_line_parser::parser const& parser, Iterator keys, uint64_t num_ke
     choose_hasher(params, config);
 }
 
+int version(void) {
+    std::cout << "pthash 0.2.1 static" << std::endl;
+    return 0;
+}
+
 int main(int argc, char** argv) {
     cmd_line_parser::parser parser(argc, argv);
 
@@ -343,18 +348,18 @@ int main(int argc, char** argv) {
     parser.add("minimal_output", "Build a minimal PHF.", "--minimal", false, true);
     parser.add("external_memory", "Build the function in external memory.", "--external", false,
                true);
-    parser.add("compile", "Compile to .hpp", "--compile", false, true);
+    parser.add("compile", "Compile to a .hpp source file", "--compile", false, true);
     parser.add("verbose_output", "Verbose output during construction.", "--verbose", false, true);
     parser.add("check", "Check correctness after construction.", "--check", false, true);
     parser.add("lookup", "Measure average lookup time after construction.", "--lookup", false,
                true);
-    parser.add("version", "program version", "--version", false, true);
+    parser.add("version", "Prints the program version and exits", "--version", false, true);
 
+    //if (argc > 1 && strcmp(argv[1], "--version") == 0) // without rurban's help2man cmd_parser
+    //    return version();
     if (!parser.parse()) return 1;
-    if (parser.parsed("version")) {
-        std::cout << "pthash v0.2.1 static" << std::endl;
-        return 0;
-    }
+    if (parser.parsed("version"))
+        return version();
     if (parser.parsed("input_filename") && parser.get<std::string>("input_filename") == "-" &&
         parser.get<bool>("external_memory")) {
         if (parser.get<bool>("check") || parser.get<bool>("lookup")) {

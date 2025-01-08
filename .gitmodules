@@ -1,6 +1,7 @@
 [submodule "external/cmd_line_parser"]
 	path = external/cmd_line_parser
-	url = https://github.com/jermp/cmd_line_parser.git
+	url = https://github.com/rurban/cmd_line_parser.git
+        branch = help2man
 [submodule "external/mm_file"]
 	path = external/mm_file
 	url = https://github.com/jermp/mm_file.git
