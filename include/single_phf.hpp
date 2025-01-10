@@ -16,6 +16,8 @@ struct single_phf {
     build_timings build_in_internal_memory(Iterator keys, uint64_t n,
                                            build_configuration const& config) {
         internal_memory_builder_single_phf<Hasher> builder;
+        std::string key_type = essentials::demangle(typeid(*keys).name());
+        m_is_string = (key_type.find("string") != std::string::npos);
         auto timings = builder.build_from_keys(keys, n, config);
         timings.encoding_seconds = build(builder, config);
         return timings;
@@ -25,6 +27,8 @@ struct single_phf {
     build_timings build_in_external_memory(Iterator keys, uint64_t n,
                                            build_configuration const& config) {
         external_memory_builder_single_phf<Hasher> builder;
+        std::string key_type = essentials::demangle(typeid(*keys).name());
+        m_is_string = (key_type.find("string") != std::string::npos);
         auto timings = builder.build_from_keys(keys, n, config);
         timings.encoding_seconds = build(builder, config);
         return timings;
@@ -58,23 +62,27 @@ struct single_phf {
 #ifdef PTHASH_STATIC
     single_phf();
     single_phf(uint64_t seed, uint64_t num_keys, uint64_t table_size, __uint128_t M,
-               skew_bucketer bucketer, Encoder pilots, bits::elias_fano<false, false> free_slots)
+               skew_bucketer bucketer, Encoder pilots, bits::elias_fano<false, false> free_slots,
+               bool is_string)
         : m_seed(seed)
         , m_num_keys(num_keys)
         , m_table_size(table_size)
         , m_M(M)
         , m_bucketer(bucketer)
         , m_pilots(pilots)
-        , m_free_slots(free_slots) {}
+        , m_free_slots(free_slots)
+        , m_is_string(is_string) {}
     single_phf(uint64_t seed, uint64_t num_keys, uint64_t table_size,
-               skew_bucketer bucketer, Encoder pilots, bits::elias_fano<false, false> free_slots)
+               skew_bucketer bucketer, Encoder pilots, bits::elias_fano<false, false> free_slots,
+               bool is_string)
         : m_seed(seed)
         , m_num_keys(num_keys)
         , m_table_size(table_size)
         , m_M(fastmod::computeM_u64(table_size))
         , m_bucketer(bucketer)
         , m_pilots(pilots)
-        , m_free_slots(free_slots) {}
+        , m_free_slots(free_slots)
+        , m_is_string(is_string) {}
 #endif
 
     template <typename T>
@@ -120,6 +128,10 @@ struct single_phf {
         return m_seed;
     }
 
+    inline bool is_string() const {
+        return m_is_string;
+    }
+    
     template <typename Visitor>
     void visit(Visitor& visitor) const {
         visit_impl(visitor, *this);
@@ -145,11 +157,15 @@ private:
         visitor.visit(t.m_bucketer);
         visitor.visit(t.m_pilots);
         visitor.visit(t.m_free_slots);
+        visitor.visit(t.m_is_string);
     }
     template <typename Visitor, typename T>
     static void visit_impl(const std::string, Visitor& visitor, T&& t) {
-        visitor.dump(pthash_static_lookup_coda(/*key_type*/)); // TODO
-        std::string type = essentials::demangle(typeid(T).name());
+        if (t.m_is_string)
+            visitor.dump(pthash_static_lookup_coda("std::string")); // TODO const char const*
+        else
+            visitor.dump(pthash_static_lookup_coda("uint64_t"));
+        std::string type = "static const " + essentials::demangle(typeid(T).name());
         visitor.dump(type);
         visitor.dump(" f(\n    ");
         visitor.visit("m_seed", t.m_seed);
@@ -165,7 +181,9 @@ private:
         visitor.visit("m_pilots", t.m_pilots);
         visitor.dump(",\n    ");
         visitor.visit("m_free_slots", t.m_free_slots);
-        visitor.dump(");\n  return f(key);\n}\n");  // TODO f<key_type>()
+        visitor.dump(",\n    ");
+        visitor.visit("m_is_string", t.m_is_string);
+        visitor.dump(");\n  return f(key);\n}\n");
     }
 
     uint64_t m_seed;
@@ -175,6 +193,7 @@ private:
     skew_bucketer m_bucketer;
     Encoder m_pilots;
     bits::elias_fano<false, false> m_free_slots;
+    bool m_is_string;
 };
 
 }  // namespace pthash

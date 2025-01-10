@@ -1,6 +1,7 @@
 INCS = -Iinclude -Iexternal/bits/include -Iexternal/bits/external/essentials/include -I.
+OPT =
 CXXFLAGS = -std=c++17 -Wall -Wextra -Wno-missing-braces -Wno-unused-function -march=native -mbmi2 -msse4.2 -g -fPIC
-CXXFLAGS += -fsanitize=address,undefined -fno-omit-frame-pointer
+CXXFLAGS += -fsanitize=address -fno-omit-frame-pointer
 DESTDIR =
 PREFIX ?= /usr/local
 ALL_H = $(shell find external include -name \*.hpp)
@@ -11,14 +12,14 @@ test: example-inc
 
 pthash-example.hpp: example-c
 	./example-c
-example-inc: src/example-inc.cpp pthash-example.hpp $(ALL_H)
-	$(CXX) $(CXXFLAGS) -O0 -o $@ $(INCS) src/example-inc.cpp
-example-c: src/example-c.cpp $(ALL_H)
-	$(CXX) $(CXXFLAGS) -O0 -o $@ $(INCS) src/example-c.cpp
-example: src/example.cpp $(ALL_H)
-	$(CXX) $(CXXFLAGS) -O1 -o $@ $(INCS) src/example.cpp
-pthash: src/build.cpp $(ALL_H)
-	$(CXX) $(CXXFLAGS) -O3 -o $@ $(INCS) src/build.cpp
+example-inc: src/example-inc.cpp pthash-example.hpp $(ALL_H) Makefile
+	$(CXX) $(CXXFLAGS) $(OPT) -o $@ $(INCS) src/example-inc.cpp
+example-c: src/example-c.cpp $(ALL_H) Makefile
+	$(CXX) $(CXXFLAGS) $(OPT) -o $@ $(INCS) src/example-c.cpp
+example: src/example.cpp $(ALL_H) Makefile
+	$(CXX) $(CXXFLAGS) $(OPT) -o $@ $(INCS) src/example.cpp
+pthash: src/build.cpp $(ALL_H) Makefile
+	$(CXX) $(CXXFLAGS) $(OPT) -o $@ $(INCS) src/build.cpp
 
 bench: pthash
 
