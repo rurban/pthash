@@ -3,6 +3,7 @@
 #include <fstream>
 #include <thread>
 #include <cmath>  // for exp, log, lgamma
+#include <limits>
 
 #include "utils/logger.hpp"
 
@@ -244,6 +245,8 @@ void merge_multiple_blocks(std::vector<Pairs> const& pairs_blocks, Merger& merge
 
 template <typename Pairs, typename Merger>
 void merge(std::vector<Pairs> const& pairs_blocks, Merger& merger, bool verbose) {
+    // set PTHASH_ENABLE_LARGE_BUCKET_ID_TYPE then
+    assert(pairs_blocks.size() <= static_cast<uint64_t>(std::numeric_limits<bucket_id_type>::max()));
     if (pairs_blocks.size() == 1) {
         merge_single_block(pairs_blocks[0], merger, verbose);
     } else {
