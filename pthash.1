@@ -4,7 +4,7 @@
 pthash \- generate a minimal perfect hash function
 .SH SYNOPSIS
 .B pthash
-\fI\,-h,--help -n num_keys -c c -a alpha -e encoder_type -p num_partitions -s seed -t num_threads -i input_filename -o output_filename -d tmp_dir -m ram --minimal --external --compile --verbose --check --lookup --version\/\fR
+\fI\,-h,--help -n num_keys -c c -a alpha -e encoder_type -p num_partitions -s seed -t num_threads -i input_filename -o output_filename --keys keys_filename --ordered -d tmp_dir -m ram --minimal --external --compile --verbose --check --lookup --version\/\fR
 .SH DESCRIPTION
 
 .IX Header "DESCRIPTION"
@@ -95,7 +95,15 @@ A string input file name. If this is not provided, then num_keys 64\-bit random 
 .PP
 \fB\-o\fR output_filename
 .IP
-Output file name where the function will be serialized.
+Output file name where the function will be serialized. (may be a .hpp)
+.PP
+\fB\-\-keys\fR keys_filename
+.IP
+Output file name to write the sorted key indices to. (may be a .hpp)
+.PP
+\fB\-\-ordered\fR
+.IP
+Order\-preserving lookup, store index mapping for ordered keys also.
 .PP
 \fB\-d\fR tmp_dir
 .IP
@@ -115,7 +123,7 @@ Build the function in external memory.
 .PP
 \fB\-\-compile\fR
 .IP
-Compile to a .hpp source file
+Compile to .hpp source file(s).
 .PP
 \fB\-\-verbose\fR
 .IP

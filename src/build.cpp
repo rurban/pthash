@@ -14,10 +14,85 @@ struct build_parameters {
 
     Iterator keys;
     uint64_t num_keys;
-    bool external_memory, check, compile, lookup;
+    bool external_memory, check, compile, lookup, ordered;
     std::string encoder_type;
     std::string output_filename;
+    std::string keys_filename;
 };
+
+/* variants:
+ * - emit the order-preserving lookup function with the index_table not exported: --ordered
+ * - or emit the index_table (appended or extra): --keys
+ * and seperately:
+ * - emit the raw keys table (appended or extra): --keys
+ */
+template <typename Function, typename Iterator, typename Keytype>
+void save_keys(Function f, build_parameters<Iterator> const& params, const std::string key_type)
+{
+    Iterator query = params.keys;
+    std::vector<bucket_id_type> index_table(f.num_keys());
+    for (bucket_id_type i = 0; i < f.num_keys(); i++) {
+        auto const &key = *query;
+        bucket_id_type p = f(key);
+        index_table[p] = p;
+        query++;
+    }
+    // optimize space
+    compact compact_table;
+    compact_table.encode(index_table.begin(), f.num_keys());
+
+    if (params.compile || (params.keys_filename.find(".hpp") != std::string::npos)) {
+        // Keytype
+        if (params.keys_filename == params.output_filename) { // append keys
+            std::ofstream out;
+            out.open(params.keys_filename, std::ios::app);
+            out << "\n"
+                "/* the order-preserving variant. */\n";
+            // number of keys: bucket_id_type
+#ifdef PTHASH_ENABLE_LARGE_BUCKET_ID_TYPE
+            out << "uint64_t";
+#else
+            out << "uint32_t";
+#endif
+            out << " pthash_lookup(const " << key_type.c_str() << " key) {\n"
+                "  using namespace pthash;\n"
+                "  /* sorted table key indices, needed to lookup the keys.\n"
+                "  static const struct compact index_table = ";
+            out.close();
+            essentials::save("compact_table", compact_table, params.keys_filename.c_str(),
+                             std::ios::app);
+            out.open(params.keys_filename, std::ios::app);
+            out << "  return index_table[pthash_unordered_lookup(key)];\n";
+            out << "}\n";
+            out.close();
+        } else {
+            std::ofstream out;
+            out.open(params.keys_filename);
+            out << pthash_static_header_coda();
+            out << "\n"
+                "/* the order-preserving variant. */\n";
+            // number of keys: bucket_id_type
+#ifdef PTHASH_ENABLE_LARGE_BUCKET_ID_TYPE
+            out << "uint64_t";
+#else
+            out << "uint32_t";
+#endif
+            out << " pthash_lookup(const " << key_type.c_str() << " key) {\n"
+                "  using namespace pthash;\n"
+                "  /* sorted table key indices, needed to lookup the keys.\n"
+                "  static const struct compact index_table = ";
+            out.close();
+            essentials::save("compact_table", compact_table, params.keys_filename.c_str(),
+                             std::ios::app);
+            out.open(params.keys_filename, std::ios::app);
+            out << "  return index_table[pthash_unordered_lookup(key)];\n";
+            out << "}\n";
+            out.close();
+        }
+    } else {
+        essentials::save(compact_table, params.keys_filename.c_str());
+    }
+}
 
 template <typename Function, typename Builder, typename Iterator>
 void build_benchmark(Builder& builder, build_timings const& timings,
@@ -106,8 +181,12 @@ void build_benchmark(Builder& builder, build_timings const& timings,
     result.add("mapper_bits_per_key", mapper_bits_per_key);
     result.add("bits_per_key", bits_per_key);
     result.add("nanosec_per_key", nanosec_per_key);
+    result.add("ordered", params.ordered ? "true" : "false");
+    result.add("compile", params.compile ? "true" : "false");
     if (params.output_filename.size())
         result.add("output_filename", params.output_filename.c_str());
+    if (params.keys_filename.size())
+        result.add("keys_filename", params.keys_filename.c_str());
     result.print_line();
 
     if (params.output_filename != "") {
@@ -120,6 +199,17 @@ void build_benchmark(Builder& builder, build_timings const& timings,
                 essentials::logger("saving data structure to disk...");
             essentials::save(f, params.output_filename.c_str());
         }
+    }
+    if (params.keys_filename != "") {
+        if (config.verbose_output)
+            essentials::logger("compile keys index_table to " + params.keys_filename);
+        Iterator query = params.keys;
+        // for now only string or u64 key types
+        std::string key_type = essentials::demangle(typeid(*query).name());
+        if (key_type.find("string") != std::string::npos)
+            save_keys<Function, Iterator, std::string>(f, params, "std::string");
+        else
+            save_keys<Function, Iterator, uint64_t>(f, params, "uint64_t");
     }
     if (config.verbose_output)
         essentials::logger("DONE");
@@ -226,6 +316,7 @@ void build(cmd_line_parser::parser const& parser, Iterator keys, uint64_t num_ke
     params.external_memory = parser.get<bool>("external_memory");
     params.check = parser.get<bool>("check");
     params.compile = parser.get<bool>("compile"); // to header
+    params.ordered = parser.get<bool>("ordered"); // order-preserving
     params.lookup = parser.get<bool>("lookup");
 
     params.encoder_type = parser.get<std::string>("encoder_type");
@@ -246,11 +337,16 @@ void build(cmd_line_parser::parser const& parser, Iterator keys, uint64_t num_ke
 
     params.output_filename =
         (!parser.parsed("output_filename")) ? "" : parser.get<std::string>("output_filename");
+    params.keys_filename =
+        (!parser.parsed("keys_filename")) ? "" : parser.get<std::string>("keys_filename");
     if (params.compile && params.output_filename == "") {
         params.output_filename = "pthash.hpp";
     }
     else if (params.output_filename.find(".hpp") != std::string::npos)
         params.compile = true;
+    if (params.ordered && params.keys_filename == "") {
+        params.keys_filename = params.output_filename;
+    }
 
     build_configuration config;
     config.c = parser.get<double>("c");
@@ -337,8 +433,12 @@ int main(int argc, char** argv) {
                "keys will be used as input instead."
                "If, instead, the filename is '-', then input is read from standard input.",
                "-i", false);
-    parser.add("output_filename", "Output file name where the function will be serialized.", "-o",
+    parser.add("output_filename", "Output file name where the function will be serialized. (may be a .hpp)", "-o",
                false);
+    parser.add("keys_filename", "Output file name to write the sorted key indices to. (may be a .hpp)", "--keys",
+               false);
+    parser.add("ordered", "Order-preserving lookup, store index mapping for ordered keys also.", "--ordered", false,
+               true);
     parser.add("tmp_dir",
                "Temporary directory used for building in external memory. Default is directory '" +
                    constants::default_tmp_dirname + "'.",
@@ -348,7 +448,7 @@ int main(int argc, char** argv) {
     parser.add("minimal_output", "Build a minimal PHF.", "--minimal", false, true);
     parser.add("external_memory", "Build the function in external memory.", "--external", false,
                true);
-    parser.add("compile", "Compile to a .hpp source file", "--compile", false, true);
+    parser.add("compile", "Compile to .hpp source file(s).", "--compile", false, true);
     parser.add("verbose_output", "Verbose output during construction.", "--verbose", false, true);
     parser.add("check", "Check correctness after construction.", "--check", false, true);
     parser.add("lookup", "Measure average lookup time after construction.", "--lookup", false,

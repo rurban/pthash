@@ -9,6 +9,7 @@ template <typename pthash_type>
 void test(std::vector<uint64_t> &keys, pthash::build_configuration &config) {
     using namespace pthash;
     pthash_type f;
+    const std::string key_type = "uint64_t";
     auto start = clock_type::now();
     auto timings = f.build_in_internal_memory(keys.begin(), keys.size(), config);
     double total_seconds = timings.partitioning_seconds +
@@ -37,7 +38,7 @@ void test(std::vector<uint64_t> &keys, pthash::build_configuration &config) {
     const std::string keys_filename("pthash-example-keys.dat");
     std::ofstream keys_file(keys_filename);
     std::cout << "writing the original random keys to " << keys_filename << std::endl;
-    for (uint64_t i = 0; i < f.num_keys(); ++i) {
+    for (bucket_id_type i = 0; i < f.num_keys(); ++i) {
         keys_file << keys[i] << '\n';
     }
     keys_file.close();
@@ -45,16 +46,43 @@ void test(std::vector<uint64_t> &keys, pthash::build_configuration &config) {
     const std::string sorted_keys_filename("pthash-example-sorted-keys.dat");
     std::ofstream sorted_keys_file(sorted_keys_filename);
     std::cout << "writing the keys in lookup order to " << sorted_keys_filename << std::endl;
-    std::vector<uint64_t> table(f.num_keys());
-    std::fill(table.begin(), table.end(), 0UL);
-    for (uint64_t i = 0; i < f.num_keys(); ++i) {
-        table[f(keys[i])] = keys[i];
+    std::vector<uint64_t> key_table(f.num_keys());
+    std::vector<bucket_id_type> index_table(f.num_keys());
+    std::fill(key_table.begin(), key_table.end(), 0UL);
+    std::fill(index_table.begin(), index_table.end(), 0UL);
+    for (bucket_id_type i = 0; i < f.num_keys(); ++i) {
+        auto const &key = f(keys[i]);
+        key_table[key] = keys[i];
+        index_table[key] = static_cast<bucket_id_type>(i);
     }
-    for (uint64_t i = 0; i < f.num_keys(); ++i) {
-        sorted_keys_file << table[i] << '\n';
+    for (bucket_id_type i = 0; i < f.num_keys(); ++i) {
+        sorted_keys_file << key_table[i] << '\n';
     }
     sorted_keys_file.close();
-    
+    // optimize space
+    bits::compact_vector compact_table;
+    compact_table.build(index_table.begin(), f.num_keys());
+
+    std::ofstream out;
+    out.open(output_filename_c, std::ios::app);
+    out << "\n"
+        "/* the order-preserving variant. */\n";
+    // number of keys: bucket_id_type
+#ifdef PTHASH_ENABLE_LARGE_BUCKET_ID_TYPE
+    out << "uint64_t";
+#else
+    out << "uint32_t";
+#endif
+    out << " pthash_lookup(const " << key_type.c_str() << " key) {\n"
+        "  using namespace pthash;\n"
+        "  /* sorted table key indices, needed to lookup the keys. */\n"
+        "  static const bits::compact_vector index_table = ";
+    out.close();
+    essentials::save("compact_table", compact_table, output_filename_c.c_str(), std::ios::app);
+    out.open(output_filename_c, std::ios::app);
+    out << ";\n  return index_table[pthash_unordered_lookup(key)];\n}\n";
+    out.close();
+
     std::string output_filename("pthash-example.bin");
     std::cout << "serializing the function to " << output_filename << std::endl;
     essentials::save(f, output_filename.c_str());
@@ -65,8 +93,10 @@ void test(std::vector<uint64_t> &keys, pthash::build_configuration &config) {
         pthash_type loaded;
         essentials::load(loaded, output_filename.c_str());
         for (uint64_t i = 0; i != 10; ++i) {
-            std::cout << i << ": f(" << keys[i] << ") = " << loaded(keys[i]) << '\n';
-            assert(f(keys[i]) == loaded(keys[i]));
+            auto const &p = loaded(keys[i]);
+            std::cout << i << ": index_table[f(" << keys[i] << ")] = " << index_table[p] << '\n';
+            assert(f(keys[i]) == p);
+            assert(index_table[p] == i);
         }
     }
     std::remove(output_filename.c_str());

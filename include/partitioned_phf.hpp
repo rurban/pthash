@@ -124,6 +124,7 @@ public:
                 m_partitions[i].f.build(builders[i], config);
             }
         }
+        m_is_string = m_partitions[0].f.is_string();
 
         auto stop = clock_type::now();
         return seconds(stop - start);
@@ -137,12 +138,13 @@ public:
     }
     partitioned_phf(uint64_t seed, uint64_t num_keys,
                     uint64_t table_size, uniform_bucketer bucketer,
-                    VECTOR(partition) partitions)
+                    VECTOR(partition) partitions, bool is_string)
         : m_seed(seed)
         , m_num_keys(num_keys)
         , m_table_size(table_size)
         , m_bucketer(bucketer)
-        , m_partitions(partitions) {}
+        , m_partitions(partitions)
+        , m_is_string(is_string) {}
 #endif
 
     template <typename T>
@@ -211,11 +213,17 @@ private:
         visitor.visit(t.m_table_size);
         visitor.visit(t.m_bucketer);
         visitor.visit(t.m_partitions);
+        visitor.visit(t.m_is_string);
     }
 
     template <typename Visitor, typename T>
     static void visit_impl(const std::string, Visitor& visitor, T&& t) {
-        visitor.dump(pthash_static_lookup_coda(/*key_type*/)); // TODO
+        //Iterator keys = t.m_partitions.f.m_keys;
+        //std::string key_type = essentials::demangle(typeid(*keys).name());
+        //if (key_type.find("string") != std::string::npos)
+        //    visitor.dump(pthash_static_lookup_coda("std::string"));
+        //else
+            visitor.dump(pthash_static_lookup_coda("uint64_t"));
         std::string type = essentials::demangle(typeid(t).name());
         visitor.dump(type);
         visitor.dump(" f(\n    ");
@@ -226,7 +234,9 @@ private:
         visitor.visit("m_table_size", t.m_table_size);
         visitor.dump(",\n    ");
         visitor.visit("m_partitions", t.m_partitions);
-        visitor.dump(");\n  return f(key);\n}\n");
+        visitor.dump(",\n    ");
+        visitor.visit("m_is_string", t.m_is_string);
+    visitor.dump(");\n  return f(key);\n}\n");
     }
     
     uint64_t m_seed;
@@ -234,6 +244,7 @@ private:
     uint64_t m_table_size;
     uniform_bucketer m_bucketer;
     VECTOR(partition) m_partitions;
+    bool m_is_string;
 };
 
 }  // namespace pthash

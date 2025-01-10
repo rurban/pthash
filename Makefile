@@ -1,6 +1,6 @@
 INCS = -Iinclude -Iexternal/bits/include -Iexternal/bits/external/essentials/include -I.
 CXXFLAGS = -std=c++17 -Wall -Wextra -Wno-missing-braces -Wno-unused-function -march=native -mbmi2 -msse4.2 -g -fPIC
-CXXFLAGS += -fsanitize=address,undefined -fno-omit-frame-pointer
+CXXFLAGS += -fsanitize=address -fno-omit-frame-pointer
 DESTDIR =
 PREFIX ?= /usr/local
 ALL_H = $(shell find external include -name \*.hpp)
