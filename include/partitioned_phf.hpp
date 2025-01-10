@@ -31,7 +31,7 @@ private:
         void visit(const std::string name, Visitor& visitor) {
             visit_impl(name, visitor, *this);
         }
-        
+
         uint64_t offset;
         single_phf<Hasher, Encoder, Minimal> f;
 
@@ -91,6 +91,8 @@ public:
         m_table_size = builder.table_size();
         m_bucketer = builder.bucketer();
         m_partitions.resize(num_partitions);
+        // set PTHASH_ENABLE_LARGE_BUCKET_ID_TYPE then
+        assert(m_num_keys <= static_cast<uint64_t>(std::numeric_limits<bucket_id_type>::max()));
 
         auto const& offsets = builder.offsets();
         auto const& builders = builder.builders();

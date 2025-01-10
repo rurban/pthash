@@ -44,6 +44,8 @@ struct single_phf {
         m_num_keys = builder.num_keys();
         m_table_size = builder.table_size();
         m_M = fastmod::computeM_u64(m_table_size);
+        // set PTHASH_ENABLE_LARGE_BUCKET_ID_TYPE then
+        assert(m_num_keys <= static_cast<uint64_t>(std::numeric_limits<bucket_id_type>::max()));
         m_bucketer = builder.bucketer();
         m_pilots.encode(builder.pilots().data(), m_bucketer.num_buckets());
         if (Minimal and m_num_keys < m_table_size) {
