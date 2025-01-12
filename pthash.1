@@ -4,7 +4,7 @@
 pthash \- generate a minimal perfect hash function
 .SH SYNOPSIS
 .B pthash
-\fI\,-h,--help -n num_keys -c c -a alpha -e encoder_type -p num_partitions -s seed -t num_threads -i input_filename -o output_filename --keys keys_filename --ordered -d tmp_dir -m ram --minimal --external --compile --verbose --check --lookup --version\/\fR
+\fI\,-h,--help -n num_keys -c c -a alpha -e encoder_type -p num_partitions -s seed -t num_threads -i input_filename -o output_filename --keys keys_filename --keys-index keys_index_filename --ordered -d tmp_dir -m ram --minimal --external --compile --verbose --check --lookup --version\/\fR
 .SH DESCRIPTION
 
 .IX Header "DESCRIPTION"
@@ -98,6 +98,10 @@ A string input file name. If this is not provided, then num_keys 64\-bit random 
 Output file name where the function will be serialized. (may be a .hpp)
 .PP
 \fB\-\-keys\fR keys_filename
+.IP
+Output file name to write the sorted keys to. (may be a .hpp)
+.PP
+\fB\-\-keys\-index\fR keys_index_filename
 .IP
 Output file name to write the sorted key indices to. (may be a .hpp)
 .PP

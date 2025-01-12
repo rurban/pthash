@@ -17,80 +17,121 @@ struct build_parameters {
     bool external_memory, check, compile, lookup, ordered;
     std::string encoder_type;
     std::string output_filename;
+    std::string keys_index_filename;
     std::string keys_filename;
 };
 
 /* variants:
  * - emit the order-preserving lookup function with the index_table not exported: --ordered
- * - or emit the index_table (appended or extra): --keys
+ * - or emit the index_table (appended or extra): --keys-index-file
  * and seperately:
- * - emit the raw keys table (appended or extra): --keys
+ * - emit the sorted keys table (appended or extra): --keys
  */
-template <typename Function, typename Iterator, typename Keytype>
-void save_keys(Function f, build_parameters<Iterator> const& params, const std::string key_type)
+void save_key(std::ostream &out, const bool binary_out, const std::string &key)
 {
-    Iterator query = params.keys;
+    if (binary_out) {
+        essentials::save_pod(out, key.size());
+        essentials::save_pod(out, key.c_str());
+    }
+    else
+        essentials::save_pod(out, "", key.c_str());
+}
+void save_key(std::ostream &out, const bool binary_out, const uint64_t key)
+{
+    if (binary_out)
+        essentials::save_pod(out, key);
+    else
+        essentials::save_pod(out, "", key);
+}
+
+// FIXME binary loader.visit if same file
+template <typename Function, typename Iterator>
+void save_keys(Function f, build_parameters<Iterator> const& params,
+               const std::string &key_type)
+{
+    std::ofstream out;
     std::vector<bucket_id_type> index_table(f.num_keys());
+    Iterator keys = params.keys;
+    const bool binary_out =
+        !(params.compile || (params.keys_filename.find(".hpp") != std::string::npos));
+    if (binary_out) {
+        out.open(params.keys_filename, std::ios::app | std::ios::binary);
+    } else {
+        out.open(params.keys_filename, std::ios::app);
+        out << "\nconst " << key_type.c_str() << " pthash_keys = {\n";
+    }
     for (bucket_id_type i = 0; i < f.num_keys(); i++) {
-        auto const &key = *query;
+        auto const &key = *keys;
+        bucket_id_type p = f(key);
+        index_table[p] = i;
+        keys++;
+    }
+    keys = params.keys; // reset
+    // TODO very slow lines_iterator, linear search forward only.
+    // but number of keys can be too big for a RandomAcessIterator
+    for (bucket_id_type i = 0; i < f.num_keys(); i++) {
+        auto const &key = *keys;
+        bucket_id_type p = f(key);
+        if (p == index_table[i]) {
+            save_key(out, binary_out, key);
+            if (i + 1 < f.num_keys() && index_table[i + 1] < p) {
+                keys = params.keys; // reset, else we can forward
+                break;
+            }
+        }
+        keys++;
+    }
+    if (!binary_out)
+        out << "};\n\n";
+    out.close();
+}
+
+template <typename Function, typename Iterator, typename Keytype>
+void save_keys_index(Function f, build_parameters<Iterator> const& params,
+                     const std::string &key_type) {
+    Iterator keys = params.keys;
+    std::ofstream out;
+    std::vector<bucket_id_type> index_table(f.num_keys());
+    //bool is_string = key_type.find("string") != std::string::npos;
+    for (bucket_id_type i = 0; i < f.num_keys(); i++) {
+        auto const &key = *keys;
         bucket_id_type p = f(key);
         index_table[p] = p;
-        query++;
+        keys++;
     }
+    
     // optimize space
     compact compact_table;
     compact_table.encode(index_table.begin(), f.num_keys());
 
-    if (params.compile || (params.keys_filename.find(".hpp") != std::string::npos)) {
-        // Keytype
-        if (params.keys_filename == params.output_filename) { // append keys
-            std::ofstream out;
-            out.open(params.keys_filename, std::ios::app);
-            out << "\n"
-                "/* the order-preserving variant. */\n";
-            // number of keys: bucket_id_type
-#ifdef PTHASH_ENABLE_LARGE_BUCKET_ID_TYPE
-            out << "uint64_t";
-#else
-            out << "uint32_t";
-#endif
-            out << " pthash_lookup(const " << key_type.c_str() << " key) {\n"
-                "  using namespace pthash;\n"
-                "  /* sorted table key indices, needed to lookup the keys.\n"
-                "  static const struct compact index_table = ";
-            out.close();
-            essentials::save("compact_table", compact_table, params.keys_filename.c_str(),
-                             std::ios::app);
-            out.open(params.keys_filename, std::ios::app);
-            out << "  return index_table[pthash_unordered_lookup(key)];\n";
-            out << "}\n";
-            out.close();
+    if (params.compile || (params.keys_index_filename.find(".hpp") != std::string::npos)) {
+        if (params.keys_index_filename == params.output_filename) { // append keys
+            out.open(params.keys_index_filename, std::ios::app);
         } else {
-            std::ofstream out;
-            out.open(params.keys_filename);
+            out.open(params.keys_index_filename);
             out << pthash_static_header_coda();
-            out << "\n"
-                "/* the order-preserving variant. */\n";
-            // number of keys: bucket_id_type
-#ifdef PTHASH_ENABLE_LARGE_BUCKET_ID_TYPE
-            out << "uint64_t";
-#else
-            out << "uint32_t";
-#endif
-            out << " pthash_lookup(const " << key_type.c_str() << " key) {\n"
-                "  using namespace pthash;\n"
-                "  /* sorted table key indices, needed to lookup the keys.\n"
-                "  static const struct compact index_table = ";
-            out.close();
-            essentials::save("compact_table", compact_table, params.keys_filename.c_str(),
-                             std::ios::app);
-            out.open(params.keys_filename, std::ios::app);
-            out << "  return index_table[pthash_unordered_lookup(key)];\n";
-            out << "}\n";
-            out.close();
+            out << ";\n";
         }
+        out << "\n/* the order-preserving variant. */\n";
+        // number of keys: bucket_id_type
+#ifdef PTHASH_ENABLE_LARGE_BUCKET_ID_TYPE
+        out << "uint64_t";
+#else
+        out << "uint32_t";
+#endif
+        out << " pthash_lookup(const " << key_type.c_str() << " key) {\n"
+            "  using namespace pthash;\n"
+            "  /* sorted table key indices, needed to lookup the keys.\n"
+            "  static const struct compact index_table = ";
+        out.close();
+        essentials::save("compact_table", compact_table, params.keys_index_filename.c_str(),
+                         std::ios::app);
+        out.open(params.keys_index_filename, std::ios::app);
+        out << "  return index_table[pthash_unordered_lookup(key)];\n";
+        out << "}\n";
+        out.close();
     } else {
-        essentials::save(compact_table, params.keys_filename.c_str());
+        essentials::save(compact_table, params.keys_index_filename.c_str());
     }
 }
 
@@ -185,6 +226,8 @@ void build_benchmark(Builder& builder, build_timings const& timings,
     result.add("compile", params.compile ? "true" : "false");
     if (params.output_filename.size())
         result.add("output_filename", params.output_filename.c_str());
+    if (params.keys_index_filename.size())
+        result.add("keys_index_filename", params.keys_index_filename.c_str());
     if (params.keys_filename.size())
         result.add("keys_filename", params.keys_filename.c_str());
     result.print_line();
@@ -200,16 +243,27 @@ void build_benchmark(Builder& builder, build_timings const& timings,
             essentials::save(f, params.output_filename.c_str());
         }
     }
-    if (params.keys_filename != "") {
+    if (params.keys_filename.size()) {
         if (config.verbose_output)
-            essentials::logger("compile keys index_table to " + params.keys_filename);
-        Iterator query = params.keys;
-        // for now only string or u64 key types
-        std::string key_type = essentials::demangle(typeid(*query).name());
+            essentials::logger("save sorted keys to " + params.keys_filename);
+        Iterator keys = params.keys;
+        std::string key_type = essentials::demangle(typeid(*keys).name());
         if (key_type.find("string") != std::string::npos)
-            save_keys<Function, Iterator, std::string>(f, params, "std::string");
+            save_keys<Function, Iterator>(f, params, "std::string");
         else
-            save_keys<Function, Iterator, uint64_t>(f, params, "uint64_t");
+            save_keys<Function, Iterator>(f, params, "uint64_t");
+    }
+    // when sorted keys are stored, we don't need the key_index anymore
+    else if (params.ordered || params.keys_index_filename.size()) {
+        if (config.verbose_output)
+            essentials::logger("compile keys indices to " + params.keys_index_filename);
+        Iterator keys = params.keys;
+        // for now only string or u64 key types
+        std::string key_type = essentials::demangle(typeid(*keys).name());
+        if (key_type.find("string") != std::string::npos)
+            save_keys_index<Function, Iterator, std::string>(f, params, "std::string");
+        else
+            save_keys_index<Function, Iterator, uint64_t>(f, params, "uint64_t");
     }
     if (config.verbose_output)
         essentials::logger("DONE");
@@ -435,7 +489,9 @@ int main(int argc, char** argv) {
                "-i", false);
     parser.add("output_filename", "Output file name where the function will be serialized. (may be a .hpp)", "-o",
                false);
-    parser.add("keys_filename", "Output file name to write the sorted key indices to. (may be a .hpp)", "--keys",
+    parser.add("keys_filename", "Output file name to write the sorted keys to. (may be a .hpp)", "--keys",
+               false);
+    parser.add("keys_index_filename", "Output file name to write the sorted key indices to. (may be a .hpp)", "--keys-index",
                false);
     parser.add("ordered", "Order-preserving lookup, store index mapping for ordered keys also.", "--ordered", false,
                true);
