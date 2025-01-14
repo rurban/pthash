@@ -9,7 +9,7 @@ int main() {
     /* Generate 10M random 64-bit keys as input data. */
     static const uint64_t num_keys = 10000000;
     static const uint64_t seed = 1234567890;
-    std::cout << "generating input data..." << std::endl;
+    std::cout << "generating 10M random distinct 64-bit keys..." << std::endl;
     VECTOR(uint64_t) keys = distinct_keys<uint64_t>(num_keys, seed);
     assert(keys.size() == num_keys);
 
@@ -38,7 +38,9 @@ int main() {
     pthash_type f;
 
     /* Build the function in internal memory. */
-    std::cout << "building the function..." << std::endl;
+    std::cout << "building the function as "
+                 "single_phf<murmurhash2_64,dictionary_dictionary,minimal> in internal memory..."
+              << std::endl;
     auto start = clock_type::now();
     auto timings = f.build_in_internal_memory(keys.begin(), keys.size(), config);
     // auto timings = f.build_in_external_memory(keys.begin(), keys.size(), config);
@@ -52,24 +54,25 @@ int main() {
     std::cout << "function uses " << bits_per_key << " [bits/key]" << std::endl;
 
     /* Sanity check! */
-    if (check(keys.begin(), f)) std::cout << "EVERYTHING OK!" << std::endl;
+    if (check(keys.begin(), f)) std::cout << "check ok" << std::endl;
 
     /* Now evaluate f on some keys. */
     for (uint64_t i = 0; i != 10; ++i) {
-        std::cout << "f(" << keys[i] << ") = " << f(keys[i]) << '\n';
+        std::cout << "f(" << keys[i] << ") = " << f(keys[i]) << std::endl;
     }
 
     /* Serialize the data structure to a file. */
-    std::cout << "serializing the function to disk..." << std::endl;
+    std::cout << "serializing the function to disk," << std::endl;
     std::string output_filename("pthash-example.bin");
     essentials::save(f, output_filename.c_str());
 
     {
         /* Now reload from disk and query. */
+        std::cout << "and loading it from there." << std::endl;
         pthash_type other;
         essentials::load(other, output_filename.c_str());
         for (uint64_t i = 0; i != 10; ++i) {
-            std::cout << "f(" << keys[i] << ") = " << other(keys[i]) << '\n';
+            std::cout << "f(" << keys[i] << ") = " << other(keys[i]) << std::endl;
             assert(f(keys[i]) == other(keys[i]));
         }
     }
